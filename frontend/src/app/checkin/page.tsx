@@ -29,7 +29,7 @@ export default function CheckInPage() {
   const handleCheckIn = async () => {
     if (!form.acceptTerms) { toast.error("Debes aceptar los términos."); return; }
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/checkin/${reservationId}`, {
+      const res = await fetch(`/api/v1/checkin/${reservationId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dni: form.dni, firstName: form.firstName, lastName: form.lastName, email: form.email }),

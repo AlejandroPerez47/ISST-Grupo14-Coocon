@@ -20,7 +20,7 @@ export default function AccessPage() {
   const handleOpen = async () => {
     if (pin.length !== 6) return;
     try {
-      const res = await fetch("http://localhost:8080/api/v1/access/open", {
+      const res = await fetch("/api/v1/access/open", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ capsuleId, guestDni, pin }),
@@ -51,19 +51,17 @@ export default function AccessPage() {
 
       {/* Door status */}
       <div className="flex flex-col items-center py-10 gap-4">
-        <div className={`w-28 h-28 rounded-full flex items-center justify-center border-4 transition-all duration-700 ${
-          isOpen ? 'border-[#4ABDE8] bg-[#4ABDE8]/20 shadow-[0_0_40px_rgba(74,189,232,0.5)]' :
-          isError ? 'border-red-400 bg-red-500/20' :
-          'border-white/20 bg-white/5'
-        }`}>
+        <div className={`w-28 h-28 rounded-full flex items-center justify-center border-4 transition-all duration-700 ${isOpen ? 'border-[#4ABDE8] bg-[#4ABDE8]/20 shadow-[0_0_40px_rgba(74,189,232,0.5)]' :
+            isError ? 'border-red-400 bg-red-500/20' :
+              'border-white/20 bg-white/5'
+          }`}>
           {isOpen
             ? <Unlock size={52} className="text-[#4ABDE8]" strokeWidth={1.5} />
             : <Lock size={52} className={isError ? 'text-red-400' : 'text-white/60'} strokeWidth={1.5} />
           }
         </div>
-        <p className={`text-sm font-semibold tracking-widest uppercase ${
-          isOpen ? 'text-[#4ABDE8]' : isError ? 'text-red-400' : 'text-white/40'
-        }`}>
+        <p className={`text-sm font-semibold tracking-widest uppercase ${isOpen ? 'text-[#4ABDE8]' : isError ? 'text-red-400' : 'text-white/40'
+          }`}>
           {isOpen ? '✓ Puerta Abierta' : isError ? '✗ Acceso Denegado' : 'Sistema Bloqueado'}
         </p>
       </div>
@@ -87,9 +85,8 @@ export default function AccessPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                i < pin.length ? 'bg-[#4ABDE8] border-[#4ABDE8]' : 'border-white/20'
-              }`}
+              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${i < pin.length ? 'bg-[#4ABDE8] border-[#4ABDE8]' : 'border-white/20'
+                }`}
             >
               {i < pin.length && <div className="w-2 h-2 rounded-full bg-white" />}
             </div>
@@ -98,7 +95,7 @@ export default function AccessPage() {
 
         {/* Keypad */}
         <div className="grid grid-cols-3 gap-3 flex-1">
-          {[1,2,3,4,5,6,7,8,9].map(n => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
             <button
               key={n}
               onClick={() => press(n.toString())}
