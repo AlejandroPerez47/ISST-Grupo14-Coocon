@@ -2,8 +2,7 @@ package com.touristcocoon.service;
 
 
 import com.touristcocoon.domain.Reserva;
-import com.touristcocoon.repository.CapsuleRepository;
-import com.touristcocoon.repository.GuestRepository;
+
 import com.touristcocoon.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,8 +19,6 @@ import java.util.UUID;
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
-    private final CapsuleRepository capsuleRepository;
-    private final GuestRepository guestRepository;
 
     @Transactional
     public Reserva createReservation(String dni, UUID capsuleId, LocalDate startDate, LocalDate endDate) {
