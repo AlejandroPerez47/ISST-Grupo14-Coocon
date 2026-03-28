@@ -9,7 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Guest {
+public class Huesped {
 
     @Id
     @Column(name = "dni", nullable = false, length = 20, unique = true)

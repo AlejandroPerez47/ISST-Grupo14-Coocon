@@ -11,7 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Capsule {
+public class Capsula {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -23,7 +23,7 @@ public class Capsule {
     @Column(name = "is_reserved", nullable = false)
     private boolean isReserved;
 
-    // Claves foráneas (por ahora como simples UUIDs/IDs hacia Hostal y Gestor/Servicio)
+    // Claves foráneas hacia Hostal y Gestor
     @Column(name = "hostel_id")
     private UUID hostelId;
 

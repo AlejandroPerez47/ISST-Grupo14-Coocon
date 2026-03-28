@@ -1,7 +1,7 @@
 package com.touristcocoon.service;
 
-import com.touristcocoon.domain.Guest;
-import com.touristcocoon.domain.Reservation;
+import com.touristcocoon.domain.Huesped;
+import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,21 +21,21 @@ public class CheckInService {
 
     @Transactional
     public String performDigitalCheckIn(UUID reservationId, String scannedDni, String firstName, String lastName, String email) {
-        Reservation reservation = reservationRepository.findById(reservationId)
+        Reserva reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
 
         if (!reservation.getGuestDni().equalsIgnoreCase(scannedDni)) {
             throw new IllegalArgumentException("El DNI escaneado no coincide con la reserva.");
         }
 
-        if (reservation.getStatus() == Reservation.ReservationStatus.CHECKED_IN) {
+        if (reservation.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO) {
             throw new IllegalStateException("El Check-in ya fue realizado previamente.");
         }
 
         // Registrar o actualizar el huésped con los datos reales escaneados del DNI
-        Optional<Guest> guestOpt = guestRepository.findById(scannedDni);
+        Optional<Huesped> guestOpt = guestRepository.findById(scannedDni);
         if (guestOpt.isEmpty()) {
-            Guest newGuest = Guest.builder()
+            Huesped newGuest = Huesped.builder()
                     .dni(scannedDni)
                     .firstName(firstName)
                     .lastName(lastName)
@@ -48,7 +48,7 @@ public class CheckInService {
         String rawPin = String.format("%06d", new Random().nextInt(999999));
         
         reservation.setAccessPin(rawPin);
-        reservation.setStatus(Reservation.ReservationStatus.CHECKED_IN);
+        reservation.setStatus(Reserva.EstadoReserva.CHECKIN_HECHO);
         reservationRepository.save(reservation);
 
         return rawPin;

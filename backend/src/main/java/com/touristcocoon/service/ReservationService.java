@@ -1,8 +1,7 @@
 package com.touristcocoon.service;
 
-import com.touristcocoon.domain.Capsule;
-import com.touristcocoon.domain.Guest;
-import com.touristcocoon.domain.Reservation;
+
+import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.repository.CapsuleRepository;
 import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.repository.ReservationRepository;
@@ -25,7 +24,7 @@ public class ReservationService {
     private final GuestRepository guestRepository;
 
     @Transactional
-    public Reservation createReservation(String dni, UUID capsuleId, LocalDate startDate, LocalDate endDate) {
+    public Reserva createReservation(String dni, UUID capsuleId, LocalDate startDate, LocalDate endDate) {
         // Validate dates
         if (startDate.isBefore(LocalDate.now()) || endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("Fechas de reserva inválidas.");
@@ -43,12 +42,12 @@ public class ReservationService {
         // Validate capsule availability
         validateCapsuleAvailability(capsuleId, startDate, endDate);
 
-        Reservation reservation = Reservation.builder()
+        Reserva reservation = Reserva.builder()
                 .guestDni(dni)
                 .capsuleId(capsuleId)
                 .startDate(startDate)
                 .endDate(endDate)
-                .status(Reservation.ReservationStatus.PENDING)
+                .status(Reserva.EstadoReserva.PENDIENTE)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -57,13 +56,13 @@ public class ReservationService {
 
     private void validateMax15DaysPerMonth(String dni, LocalDate startDate, LocalDate endDate) {
         // Obtenemos las reservas del huésped en el mes actual para validarlo (simplificado)
-        List<Reservation> userReservations = reservationRepository.findByGuestDni(dni);
+        List<Reserva> userReservations = reservationRepository.findByGuestDni(dni);
         
         int month = startDate.getMonthValue();
         int year = startDate.getYear();
         
         long totalDaysInMonth = userReservations.stream()
-                .filter(r -> r.getStatus() != Reservation.ReservationStatus.CANCELLED)
+                .filter(r -> r.getStatus() != Reserva.EstadoReserva.CANCELADA)
                 .filter(r -> r.getStartDate().getMonthValue() == month && r.getStartDate().getYear() == year)
                 .mapToLong(r -> ChronoUnit.DAYS.between(
                         r.getStartDate().isBefore(startDate.withDayOfMonth(1)) ? startDate.withDayOfMonth(1) : r.getStartDate(),
@@ -79,9 +78,9 @@ public class ReservationService {
     }
 
     private void validateCapsuleAvailability(UUID capsuleId, LocalDate startDate, LocalDate endDate) {
-        List<Reservation> conflicts = reservationRepository
+        List<Reserva> conflicts = reservationRepository
                 .findByCapsuleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
-                        capsuleId, endDate, startDate, Reservation.ReservationStatus.CANCELLED
+                        capsuleId, endDate, startDate, Reserva.EstadoReserva.CANCELADA
                 );
 
         if (!conflicts.isEmpty()) {
@@ -89,7 +88,7 @@ public class ReservationService {
         }
     }
     
-    public Reservation getReservation(UUID id) {
+    public Reserva getReservation(UUID id) {
         return reservationRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
     }
 }

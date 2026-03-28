@@ -13,13 +13,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Reservation {
+public class Reserva {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Relación con el huésped (solo guardamos el DNI como clave foránea simple para un acoplamiento suelto)
+    // Relación con el huésped (solo guardamos el DNI como clave foránea simple)
     @Column(name = "guest_dni", nullable = false, length = 20)
     private String guestDni;
 
@@ -33,22 +33,22 @@ public class Reservation {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    // El PIN de 6 cifras generado para acceso (se desbloquea tras el Check-in)
+    // PIN de 6 cifras generado para acceso (se desbloquea tras el Check-in)
     @Column(name = "access_pin", length = 6)
     private String accessPin;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private ReservationStatus status;
+    private EstadoReserva status;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public enum ReservationStatus { 
-        PENDING,       // Creada pero sin pagar o confirmar
-        CONFIRMED,     // Pagada y confirmada, pendiente de check-in
-        CHECKED_IN,    // Check-in digital completado (PIN Activo)
-        COMPLETED,     // Estancia finalizada
-        CANCELLED      // Cancelada
+    public enum EstadoReserva {
+        PENDIENTE,     // Creada pero sin pagar o confirmar
+        CONFIRMADA,    // Pagada y confirmada, pendiente de check-in
+        CHECKIN_HECHO, // Check-in digital completado (PIN Activo)
+        COMPLETADA,    // Estancia finalizada
+        CANCELADA      // Cancelada
     }
 }

@@ -12,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AccessRecord {
+public class RegistroAcceso {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,12 +28,12 @@ public class AccessRecord {
     private UUID capsuleId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20, updatable = false)
-    private ActionType action;
+    @Column(nullable = false, length = 30, updatable = false)
+    private TipoAccion action;
 
-    public enum ActionType {
-        OPEN_DOOR,
-        CLOSE_DOOR,
-        OPEN_MAIN_BUILDING
+    public enum TipoAccion {
+        ABRIR_CAPSULA,
+        CERRAR_CAPSULA,
+        ABRIR_EDIFICIO
     }
 }

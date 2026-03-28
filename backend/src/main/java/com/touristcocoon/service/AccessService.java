@@ -1,7 +1,7 @@
 package com.touristcocoon.service;
 
-import com.touristcocoon.domain.AccessRecord;
-import com.touristcocoon.domain.Reservation;
+import com.touristcocoon.domain.RegistroAcceso;
+import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.repository.AccessRecordRepository;
 import com.touristcocoon.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +22,9 @@ public class AccessService {
     @Transactional
     public boolean openCapsuleDoor(UUID capsuleId, String guestDni, String pinSubmitted) {
         
-        List<Reservation> activeReservations = reservationRepository.findByCapsuleIdAndStatus(capsuleId, Reservation.ReservationStatus.CHECKED_IN);
+        List<Reserva> activeReservations = reservationRepository.findByCapsuleIdAndStatus(capsuleId, Reserva.EstadoReserva.CHECKIN_HECHO);
         
-        Reservation activeReservation = activeReservations.stream()
+        Reserva activeReservation = activeReservations.stream()
                 .filter(res -> res.getGuestDni().equalsIgnoreCase(guestDni))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No hay una reserva activa (Checked In) para este huésped y cápsula."));
@@ -35,10 +35,10 @@ public class AccessService {
         }
 
         // Guardar el registro inalterable de apertura (Auditoría de seguridad)
-        AccessRecord record = AccessRecord.builder()
+        RegistroAcceso record = RegistroAcceso.builder()
                 .capsuleId(capsuleId)
                 .guestDni(guestDni)
-                .action(AccessRecord.ActionType.OPEN_DOOR)
+                .action(RegistroAcceso.TipoAccion.ABRIR_CAPSULA)
                 .timestamp(LocalDateTime.now())
                 .build();
                 

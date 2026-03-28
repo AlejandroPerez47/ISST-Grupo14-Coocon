@@ -1,6 +1,6 @@
 package com.touristcocoon.controller;
 
-import com.touristcocoon.domain.Reservation;
+import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.service.ReservationService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody CreateReservationRequest request) {
         try {
-            Reservation res = reservationService.createReservation(
+            Reserva res = reservationService.createReservation(
                     request.getGuestDni(),
                     request.getCapsuleId(),
                     request.getStartDate(),
