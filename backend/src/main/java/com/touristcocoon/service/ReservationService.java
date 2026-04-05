@@ -88,4 +88,12 @@ public class ReservationService {
     public Reserva getReservation(UUID id) {
         return reservationRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
     }
+
+    public Reserva getActiveReservationByDni(String dni) {
+        return reservationRepository.findByGuestDni(dni).stream()
+                .filter(r -> r.getStatus() == Reserva.EstadoReserva.CONFIRMADA
+                          || r.getStatus() == Reserva.EstadoReserva.PENDIENTE)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró una reserva activa para ese DNI."));
+    }
 }

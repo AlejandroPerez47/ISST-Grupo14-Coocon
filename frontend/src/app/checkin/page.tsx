@@ -9,6 +9,7 @@ export default function CheckInPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [reservationId, setReservationId] = useState("");
+  const [dniInput, setDniInput] = useState("");
   const [form, setForm] = useState({
     dni: "", firstName: "", lastName: "", email: "",
     acceptTerms: false,
@@ -16,14 +17,18 @@ export default function CheckInPage() {
   const [pin, setPin] = useState("");
   const [scanning, setScanning] = useState(false);
 
-  const simulateScan = () => {
-    if (!reservationId) { toast.error("Introduce tu ID de reserva primero."); return; }
+  const handleDniLookup = async () => {
+    if (!dniInput.trim()) { toast.error("Introduce tu DNI primero."); return; }
     setScanning(true);
-    setTimeout(() => {
-      setScanning(false);
-      setForm(f => ({ ...f, dni: "12345678A", firstName: "Manuel", lastName: "Pérez" }));
+    try {
+      const res = await fetch(`/api/v1/reservations/by-dni/${dniInput.trim().toUpperCase()}`);
+      if (!res.ok) { toast.error("No se encontró una reserva activa para ese DNI."); return; }
+      const data = await res.json();
+      setReservationId(data.id);
+      setForm(f => ({ ...f, dni: dniInput.trim().toUpperCase(), firstName: "", lastName: "" }));
       setStep(2);
-    }, 1800);
+    } catch { toast.error("Error de conexión."); }
+    finally { setScanning(false); }
   };
 
   const handleCheckIn = async () => {
@@ -59,36 +64,37 @@ export default function CheckInPage() {
         </div>
         <h1 className="text-white text-2xl font-bold">Check-in Digital</h1>
         <p className="text-white/70 text-sm mt-1">
-          {step === 1 ? 'Escanea tu documento' : step === 2 ? 'Confirma tus datos' : '¡Todo listo!'}
+          {step === 1 ? 'Introduce tu DNI' : step === 2 ? 'Confirma tus datos' : '¡Todo listo!'}
         </p>
       </div>
 
       <div className="px-4 mt-4 pb-28 flex-1">
 
-        {/* STEP 1 — Scan */}
+        {/* STEP 1 — DNI lookup */}
         {step === 1 && (
           <div className="card space-y-5">
             <div>
-              <label className="form-label">ID de Reserva</label>
+              <label className="form-label">DNI / NIF del titular de la reserva</label>
               <input
                 className="input-underline"
-                placeholder="UUID de la reserva…"
-                value={reservationId}
-                onChange={e => setReservationId(e.target.value)}
+                placeholder="12345678A"
+                value={dniInput}
+                onChange={e => setDniInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleDniLookup()}
               />
             </div>
 
             <div
-              onClick={simulateScan}
+              onClick={handleDniLookup}
               className="border-2 border-dashed border-[#4ABDE8]/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer hover:bg-[#4ABDE8]/5 active:scale-95 transition-all"
             >
               <div className={`p-5 rounded-full ${scanning ? 'bg-[#4ABDE8]/20 animate-pulse' : 'bg-[#4ABDE8]/10'}`}>
                 <ScanLine size={36} className="text-[#4ABDE8]" strokeWidth={1.5} />
               </div>
               <p className="text-[#1B2F6E] font-semibold text-sm">
-                {scanning ? 'Escaneando DNI…' : 'Pulsa para escanear tu DNI'}
+                {scanning ? 'Buscando reserva…' : 'Pulsa para buscar tu reserva'}
               </p>
-              <p className="text-slate-400 text-xs text-center">El acceso está bloqueado hasta completar este paso por cumplimiento legal</p>
+              <p className="text-slate-400 text-xs text-center">Buscaremos tu reserva activa por DNI automáticamente</p>
             </div>
           </div>
         )}
