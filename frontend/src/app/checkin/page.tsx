@@ -54,10 +54,10 @@ export default function CheckInPage() {
         className="relative px-5 pt-12 pb-8 rounded-b-[2.5rem]"
         style={{ background: 'linear-gradient(160deg, #1B2F6E 0%, #4ABDE8 100%)' }}
       >
-        <button onClick={() => step > 1 ? setStep(s => s - 1) : router.back()} className="absolute top-12 left-5 text-white/70 hover:text-white transition-colors">
+        <button onClick={() => step > 1 ? setStep(s => s - 1) : router.back()} className="absolute top-6 left-5 text-white/70 hover:text-white transition-colors">
           <ArrowLeft size={22} />
         </button>
-        <div className="flex gap-2 mb-5 mt-2">
+        <div className="flex gap-2 mb-5 mt-8">
           {[1, 2, 3].map(s => (
             <div key={s} className={`h-1 rounded-full flex-1 transition-all ${step >= s ? 'bg-white' : 'bg-white/30'}`} />
           ))}
