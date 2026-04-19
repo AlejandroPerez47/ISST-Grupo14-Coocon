@@ -40,6 +40,8 @@ public class CheckInService {
                     .firstName(firstName)
                     .lastName(lastName)
                     .email(email)
+                    .password(UUID.randomUUID().toString())
+                    .role("USER")
                     .build();
             guestRepository.save(newGuest);
         }

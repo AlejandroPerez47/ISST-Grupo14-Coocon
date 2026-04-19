@@ -101,16 +101,7 @@ export default function ReservationsPage() {
           </div>
         </div>
 
-        {/* Status card Placeholder */}
-        <div className="bg-white/30 border-2 border-dashed border-white rounded-[2rem] flex flex-col items-center justify-center py-12 gap-3">
-          <div className="w-14 h-14 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center text-slate-300 border border-white shadow-inner">
-             <Star size={28} className="text-slate-200" />
-          </div>
-          <div className="text-center">
-            <p className="text-navy/40 text-sm font-bold uppercase tracking-wider">Estado actual</p>
-            <p className="text-slate-400 text-xs">No tienes estancias activas hoy</p>
-          </div>
-        </div>
+
 
       </div>
 
