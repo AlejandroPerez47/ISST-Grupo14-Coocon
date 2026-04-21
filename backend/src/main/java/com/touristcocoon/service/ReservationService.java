@@ -53,7 +53,7 @@ public class ReservationService {
 
     private void validateMax15DaysPerMonth(String dni, LocalDate startDate, LocalDate endDate) {
         // Obtenemos las reservas del huésped en el mes actual para validarlo (simplificado)
-        List<Reserva> userReservations = reservationRepository.findByGuestDni(dni);
+        List<Reserva> userReservations = reservationRepository.findByGuestDniIgnoreCase(dni);
         
         int month = startDate.getMonthValue();
         int year = startDate.getYear();
@@ -90,7 +90,7 @@ public class ReservationService {
     }
 
     public Reserva getActiveReservationByDni(String dni) {
-        return reservationRepository.findByGuestDni(dni).stream()
+        return reservationRepository.findByGuestDniIgnoreCase(dni).stream()
                 .filter(r -> r.getStatus() == Reserva.EstadoReserva.CONFIRMADA
                           || r.getStatus() == Reserva.EstadoReserva.PENDIENTE)
                 .findFirst()

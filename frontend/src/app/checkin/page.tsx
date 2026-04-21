@@ -21,7 +21,10 @@ export default function CheckInPage() {
     if (!dniInput.trim()) { toast.error("Introduce tu DNI primero."); return; }
     setScanning(true);
     try {
-      const res = await fetch(`/api/v1/reservations/by-dni/${dniInput.trim().toUpperCase()}`);
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`/api/v1/reservations/by-dni/${dniInput.trim().toUpperCase()}`, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
       if (!res.ok) { toast.error("No se encontró una reserva activa para ese DNI."); return; }
       const data = await res.json();
       setReservationId(data.id);
@@ -34,9 +37,13 @@ export default function CheckInPage() {
   const handleCheckIn = async () => {
     if (!form.acceptTerms) { toast.error("Debes aceptar los términos."); return; }
     try {
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`/api/v1/checkin/${reservationId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ dni: form.dni, firstName: form.firstName, lastName: form.lastName, email: form.email }),
       });
       if (!res.ok) { toast.error(await res.text()); return; }

@@ -32,12 +32,19 @@ export default function LoginPage() {
         body: JSON.stringify({ dni: loginDni, password: loginPassword }),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
 
       if (response.ok) {
         // Guardar Info en LocalStorage
         localStorage.setItem('user_role', data.role);
         localStorage.setItem('user_name', data.nombre);
+        localStorage.setItem('user_dni', data.dni);
         localStorage.setItem('auth_token', data.token);
 
         // Redirección por rol
@@ -47,7 +54,8 @@ export default function LoginPage() {
           router.push('/reservations');
         }
       } else {
-        alert(data || "DNI o contraseña incorrectos");
+        const errorMessage = typeof data === 'object' ? (data.message || data.error || JSON.stringify(data)) : data;
+        alert(errorMessage || "DNI o contraseña incorrectos");
       }
     } catch (error) {
       alert("Error de conexión con el servidor");
@@ -73,18 +81,27 @@ export default function LoginPage() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
 
       if (response.ok) {
         localStorage.setItem('user_role', data.role);
         localStorage.setItem('user_name', data.nombre);
+        localStorage.setItem('user_dni', data.dni);
         localStorage.setItem('auth_token', data.token);
         
         router.push('/reservations');
       } else {
-        alert(data || "Error al crear la cuenta");
+        const errorMessage = typeof data === 'object' ? (data.message || data.error || JSON.stringify(data)) : data;
+        alert(errorMessage || "Error al crear la cuenta");
       }
     } catch (error) {
+      console.error(error);
       alert("Error de conexión con el servidor");
     } finally {
       setLoading(false);

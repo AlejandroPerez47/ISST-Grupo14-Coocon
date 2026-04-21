@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reserva, UUID> {
-    List<Reserva> findByGuestDni(String guestDni);
+    List<Reserva> findByGuestDniIgnoreCase(String guestDni);
     List<Reserva> findByCapsuleIdAndStatus(UUID capsuleId, Reserva.EstadoReserva status);
 
     // Para validar ocupación de una cápsula en un rango de fechas

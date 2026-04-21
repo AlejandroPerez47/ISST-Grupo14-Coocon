@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -21,6 +22,11 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody CreateReservationRequest request) {
         try {
+            String principalDni = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (!principalDni.equals(request.getGuestDni())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("El DNI de la reserva no coincide con el usuario autenticado.");
+            }
+
             Reserva res = reservationService.createReservation(
                     request.getGuestDni(),
                     request.getCapsuleId(),

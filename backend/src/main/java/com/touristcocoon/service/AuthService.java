@@ -5,6 +5,7 @@ import com.touristcocoon.dto.AuthResponse;
 import com.touristcocoon.dto.LoginRequest;
 import com.touristcocoon.dto.RegisterRequest;
 import com.touristcocoon.repository.GuestRepository;
+import com.touristcocoon.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final GuestRepository guestRepository;
+    private final JwtService jwtService;
 
     public AuthResponse login(LoginRequest request) {
         Huesped guest = guestRepository.findById(request.getDni())
@@ -23,10 +25,13 @@ public class AuthService {
             throw new IllegalArgumentException("Contraseña incorrecta");
         }
 
+        String token = jwtService.generateToken(guest.getDni());
+
         return AuthResponse.builder()
-                .token("mock-jwt-token-77bceb13")
+                .token(token)
                 .role(guest.getRole())
                 .nombre(guest.getFirstName())
+                .dni(guest.getDni())
                 .build();
     }
 
@@ -47,10 +52,13 @@ public class AuthService {
 
         guestRepository.save(newGuest);
 
+        String token = jwtService.generateToken(newGuest.getDni());
+
         return AuthResponse.builder()
-                .token("mock-jwt-token-register")
+                .token(token)
                 .role("USER")
                 .nombre(newGuest.getFirstName())
+                .dni(newGuest.getDni())
                 .build();
     }
 }
