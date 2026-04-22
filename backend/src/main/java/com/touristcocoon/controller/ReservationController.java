@@ -48,6 +48,15 @@ public class ReservationController {
         }
     }
 
+    @GetMapping("/all-by-dni/{dni}")
+    public ResponseEntity<?> getAllByDni(@PathVariable String dni) {
+        try {
+            return ResponseEntity.ok(reservationService.getAllReservationsByDni(dni));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
     @Data
     public static class CreateReservationRequest {
         private String guestDni;

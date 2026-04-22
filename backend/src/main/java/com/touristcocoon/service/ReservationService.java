@@ -101,4 +101,12 @@ public class ReservationService {
         
         return activeReservations;
     }
+
+    public List<Reserva> getAllReservationsByDni(String dni) {
+        List<Reserva> allReservations = reservationRepository.findByGuestDniIgnoreCase(dni);
+        if (allReservations.isEmpty()) {
+            throw new IllegalArgumentException("No se encontraron reservas para este usuario.");
+        }
+        return allReservations;
+    }
 }
