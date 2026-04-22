@@ -37,6 +37,9 @@ public class Reserva {
     @Column(name = "access_pin", length = 6)
     private String accessPin;
 
+    @Column(name = "dni_photo_path")
+    private String dniPhotoPath;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EstadoReserva status;

@@ -42,7 +42,7 @@ public class ReservationController {
     @GetMapping("/by-dni/{dni}")
     public ResponseEntity<?> getByDni(@PathVariable String dni) {
         try {
-            return ResponseEntity.ok(reservationService.getActiveReservationByDni(dni));
+            return ResponseEntity.ok(reservationService.getActiveReservationsByDni(dni));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
