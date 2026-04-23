@@ -1,5 +1,6 @@
 package com.touristcocoon.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,13 +20,16 @@ public class Reserva {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Relación con el huésped (solo guardamos el DNI como clave foránea simple)
-    @Column(name = "guest_dni", nullable = false, length = 20)
-    private String guestDni;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guest_dni", referencedColumnName = "dni", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Huesped guest;
 
     // Relación con la cápsula
-    @Column(name = "capsule_id", nullable = false)
-    private UUID capsuleId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "capsule_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Capsula capsula;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;

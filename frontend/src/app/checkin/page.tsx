@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ScanLine, CheckCircle, User, FileImage, CalendarDays } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function CheckInPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    const role = localStorage.getItem("user_role");
+    if (role === "ADMIN") {
+      router.push("/admin/dashboard");
+    }
+  }, [router]);
+
   const [step, setStep] = useState(1);
   const [reservations, setReservations] = useState<any[]>([]);
   const [reservationId, setReservationId] = useState("");

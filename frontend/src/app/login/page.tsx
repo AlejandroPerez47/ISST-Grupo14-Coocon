@@ -20,6 +20,8 @@ export default function LoginPage() {
   const [regDni, setRegDni] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [isManager, setIsManager] = useState(false);
+  const [regManagerKey, setRegManagerKey] = useState('');
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +79,8 @@ export default function LoginPage() {
           apellidos: regApellidos, 
           dni: regDni, 
           email: regEmail, 
-          password: regPassword 
+          password: regPassword,
+          managerKey: isManager ? regManagerKey : undefined
         }),
       });
 
@@ -95,7 +98,11 @@ export default function LoginPage() {
         localStorage.setItem('user_dni', data.dni);
         localStorage.setItem('auth_token', data.token);
         
-        router.push('/reservations');
+        if (data.role === 'ADMIN') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/reservations');
+        }
       } else {
         const errorMessage = typeof data === 'object' ? (data.message || data.error || JSON.stringify(data)) : data;
         alert(errorMessage || "Error al crear la cuenta");
@@ -292,6 +299,40 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
+
+              <div className="flex items-center gap-3 mt-4 border-t border-slate-100 pt-4">
+                <input 
+                  type="checkbox" 
+                  checked={isManager} 
+                  onChange={(e) => setIsManager(e.target.checked)}
+                  className="w-4 h-4 accent-[#4ABDE8] cursor-pointer"
+                  id="managerCheck"
+                />
+                <label htmlFor="managerCheck" className="text-sm font-bold text-slate-500 cursor-pointer">
+                  Quiero registrar cuenta de Gestor (Admin)
+                </label>
+              </div>
+
+              {isManager && (
+                <div className="space-y-2 p-4 bg-sky/5 rounded-2xl border border-sky/20 mt-4">
+                  <label className="form-label px-1 text-sky font-bold">Clave Secreta de Gestor</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sky/60">
+                      <Lock size={18} />
+                    </div>
+                    <input
+                      type="password"
+                      placeholder="Identificador autorizado"
+                      value={regManagerKey}
+                      onChange={(e) => setRegManagerKey(e.target.value)}
+                      className="w-full bg-white/70 border border-sky/30 shadow-inner rounded-xl py-3 pl-11 pr-4 text-navy text-sm placeholder:text-sky/40 focus:outline-none focus:ring-2 focus:ring-sky/50 transition-all font-medium"
+                      required={isManager}
+                      disabled={loading}
+                    />
+                  </div>
+                  <p className="text-[10px] text-sky/70 mt-1">Esta clave es proporcionada internamente por la empresa.</p>
+                </div>
+              )}
 
               <button 
                 type="submit" 

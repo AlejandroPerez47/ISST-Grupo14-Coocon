@@ -41,13 +41,22 @@ public class AuthService {
             throw new IllegalArgumentException("El DNI ya está registrado");
         }
 
+        String finalRole = "USER";
+        if (request.getManagerKey() != null && !request.getManagerKey().trim().isEmpty()) {
+            if ("Cocooon14".equals(request.getManagerKey())) {
+                finalRole = "ADMIN";
+            } else {
+                throw new IllegalArgumentException("Clave de autorización de gestor inválida.");
+            }
+        }
+
         Huesped newGuest = Huesped.builder()
                 .dni(request.getDni())
                 .firstName(request.getNombre())
                 .lastName(request.getApellidos())
                 .email(request.getEmail())
                 .password(request.getPassword())
-                .role("USER")
+                .role(finalRole)
                 .build();
 
         guestRepository.save(newGuest);
@@ -56,7 +65,7 @@ public class AuthService {
 
         return AuthResponse.builder()
                 .token(token)
-                .role("USER")
+                .role(finalRole)
                 .nombre(newGuest.getFirstName())
                 .dni(newGuest.getDni())
                 .build();

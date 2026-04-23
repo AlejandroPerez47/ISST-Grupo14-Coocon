@@ -29,7 +29,6 @@ public class ReservationController {
 
             Reserva res = reservationService.createReservation(
                     request.getGuestDni(),
-                    request.getCapsuleId(),
                     request.getStartDate(),
                     request.getEndDate()
             );
@@ -60,7 +59,6 @@ public class ReservationController {
     @Data
     public static class CreateReservationRequest {
         private String guestDni;
-        private UUID capsuleId;
         private LocalDate startDate;
         private LocalDate endDate;
     }

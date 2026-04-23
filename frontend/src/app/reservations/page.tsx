@@ -10,11 +10,17 @@ export default function ReservationsPage() {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
+    const role = localStorage.getItem('user_role');
+    if (role === 'ADMIN') {
+      router.push('/admin/dashboard');
+      return;
+    }
+
     const name = localStorage.getItem('user_name');
     if (name) {
       setUserName(name);
     }
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.clear();

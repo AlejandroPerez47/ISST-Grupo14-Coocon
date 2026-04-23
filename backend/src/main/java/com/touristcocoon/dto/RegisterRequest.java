@@ -13,4 +13,5 @@ public class RegisterRequest {
     private String dni;
     private String email;
     private String password;
+    private String managerKey;
 }

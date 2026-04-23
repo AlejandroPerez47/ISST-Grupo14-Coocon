@@ -2,7 +2,10 @@ package com.touristcocoon.service;
 
 
 import com.touristcocoon.domain.Reserva;
-
+import com.touristcocoon.domain.Capsula;
+import com.touristcocoon.domain.Huesped;
+import com.touristcocoon.repository.CapsuleRepository;
+import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,9 +22,11 @@ import java.util.UUID;
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
+    private final CapsuleRepository capsuleRepository;
+    private final GuestRepository guestRepository;
 
     @Transactional
-    public Reserva createReservation(String dni, UUID capsuleId, LocalDate startDate, LocalDate endDate) {
+    public Reserva createReservation(String dni, LocalDate startDate, LocalDate endDate) {
         // Validate dates
         if (startDate.isBefore(LocalDate.now()) || endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("Fechas de reserva inválidas.");
@@ -36,12 +41,30 @@ public class ReservationService {
         // Rule 2: Max 15 days in the same calendar month
         validateMax15DaysPerMonth(dni, startDate, endDate);
 
-        // Validate capsule availability
-        validateCapsuleAvailability(capsuleId, startDate, endDate);
+        // Retrieve all capsules to find an available one
+        List<Capsula> allCapsules = capsuleRepository.findAll();
+        if (allCapsules.isEmpty()) {
+            throw new IllegalArgumentException("No hay cápsulas operativas en el hotel actualmente.");
+        }
+
+        Capsula assignedCapsule = null;
+        for (Capsula capsule : allCapsules) {
+            if (isCapsuleAvailable(capsule.getId(), startDate, endDate)) {
+                assignedCapsule = capsule;
+                break;
+            }
+        }
+
+        if (assignedCapsule == null) {
+            throw new IllegalArgumentException("No hay cápsulas libres para el periodo de fechas seleccionado.");
+        }
+
+        Huesped guest = guestRepository.findById(dni)
+                .orElseThrow(() -> new IllegalArgumentException("Huésped no encontrado."));
 
         Reserva reservation = Reserva.builder()
-                .guestDni(dni)
-                .capsuleId(capsuleId)
+                .guest(guest)
+                .capsula(assignedCapsule)
                 .startDate(startDate)
                 .endDate(endDate)
                 .status(Reserva.EstadoReserva.PENDIENTE)
@@ -74,21 +97,20 @@ public class ReservationService {
         }
     }
 
-    private void validateCapsuleAvailability(UUID capsuleId, LocalDate startDate, LocalDate endDate) {
+    private boolean isCapsuleAvailable(UUID capsuleId, LocalDate startDate, LocalDate endDate) {
         List<Reserva> conflicts = reservationRepository
-                .findByCapsuleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                .findByCapsulaIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
                         capsuleId, endDate, startDate, Reserva.EstadoReserva.CANCELADA
                 );
-
-        if (!conflicts.isEmpty()) {
-            throw new IllegalArgumentException("La cápsula seleccionada no está disponible en esas fechas.");
-        }
+        return conflicts.isEmpty();
     }
     
+    @Transactional(readOnly = true)
     public Reserva getReservation(UUID id) {
         return reservationRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
     }
 
+    @Transactional(readOnly = true)
     public List<Reserva> getActiveReservationsByDni(String dni) {
         List<Reserva> activeReservations = reservationRepository.findByGuestDniIgnoreCase(dni).stream()
                 .filter(r -> r.getStatus() == Reserva.EstadoReserva.CONFIRMADA
@@ -102,6 +124,7 @@ public class ReservationService {
         return activeReservations;
     }
 
+    @Transactional(readOnly = true)
     public List<Reserva> getAllReservationsByDni(String dni) {
         List<Reserva> allReservations = reservationRepository.findByGuestDniIgnoreCase(dni);
         if (allReservations.isEmpty()) {

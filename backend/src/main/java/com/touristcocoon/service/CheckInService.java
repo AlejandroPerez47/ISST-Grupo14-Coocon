@@ -41,12 +41,20 @@ public class CheckInService {
         Reserva reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
 
-        if (!reservation.getGuestDni().equalsIgnoreCase(scannedDni)) {
+        if (!reservation.getGuest().getDni().equalsIgnoreCase(scannedDni)) {
             throw new IllegalArgumentException("El DNI proporcionado no coincide con la reserva.");
         }
 
         if (reservation.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO) {
             throw new IllegalStateException("El Check-in ya fue realizado previamente.");
+        }
+
+        if (reservation.getStatus() == Reserva.EstadoReserva.CANCELADA) {
+            throw new IllegalStateException("No se puede hacer check-in de una reserva cancelada.");
+        }
+
+        if (reservation.getStatus() == Reserva.EstadoReserva.COMPLETADA) {
+            throw new IllegalStateException("Esta reserva ya fue completada.");
         }
         
         // --- GUARDADO DE ARCHIVOS ---
@@ -69,10 +77,10 @@ public class CheckInService {
         }
 
         // Registrar o actualizar el huésped con los originales
-        Optional<Huesped> guestOpt = guestRepository.findById(reservation.getGuestDni());
+        Optional<Huesped> guestOpt = guestRepository.findById(reservation.getGuest().getDni());
         if (guestOpt.isEmpty()) {
             Huesped newGuest = Huesped.builder()
-                    .dni(reservation.getGuestDni())
+                    .dni(reservation.getGuest().getDni())
                     .firstName(firstName)
                     .lastName(lastName)
                     .email(email)

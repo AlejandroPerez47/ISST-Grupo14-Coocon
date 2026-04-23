@@ -12,6 +12,12 @@ export default function MyReservationsPage() {
 
   useEffect(() => {
     const fetchMyReservations = async () => {
+      const role = localStorage.getItem("user_role");
+      if (role === "ADMIN") {
+        router.push("/admin/dashboard");
+        return;
+      }
+
       const dni = localStorage.getItem("user_dni");
       const token = localStorage.getItem("auth_token");
 
@@ -97,8 +103,8 @@ export default function MyReservationsPage() {
                   <p className="text-xs font-bold text-slate-400 tracking-wider mb-1">CÁPSULA</p>
                   <div className="flex items-center gap-2">
                     <Key size={16} className="text-[#1B2F6E]" />
-                    <span className="font-mono font-bold text-[#1B2F6E] uppercase tracking-wide truncate max-w-[150px]" title={res.capsuleId}>
-                      {res.capsuleId.split('-')[0]}***
+                    <span className="font-mono font-bold text-[#1B2F6E] uppercase tracking-wide">
+                      {res.capsula?.roomNumber !== null && res.capsula?.roomNumber !== undefined ? `Nº ${res.capsula.roomNumber}` : 'Asignando...'}
                     </span>
                   </div>
                 </div>

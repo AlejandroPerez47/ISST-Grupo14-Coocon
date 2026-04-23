@@ -9,7 +9,6 @@ export default function NewReservationPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     guestDni: "",
-    capsuleId: "123e4567-e89b-12d3-a456-426614174000",
     startDate: "",
     endDate: "",
   });
@@ -17,11 +16,17 @@ export default function NewReservationPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    const role = localStorage.getItem("user_role");
+    if (role === "ADMIN") {
+      router.push("/admin/dashboard");
+      return;
+    }
+
     const savedDni = localStorage.getItem('user_dni');
     if (savedDni) {
       setFormData(prev => ({ ...prev, guestDni: savedDni }));
     }
-  }, []);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

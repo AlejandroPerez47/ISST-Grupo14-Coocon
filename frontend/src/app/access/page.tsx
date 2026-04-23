@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Lock, Unlock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 export default function AccessPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    const role = localStorage.getItem("user_role");
+    if (role === "ADMIN") {
+      router.push("/admin/dashboard");
+    }
+  }, [router]);
+
   const [capsuleId, setCapsuleId] = useState("123e4567-e89b-12d3-a456-426614174000");
   const [guestDni, setGuestDni] = useState("");
   const [pin, setPin] = useState("");

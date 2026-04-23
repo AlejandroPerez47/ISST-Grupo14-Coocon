@@ -14,8 +14,8 @@ const links = [
 export default function Navbar() {
   const pathname = usePathname();
 
-  // No mostrar la barra de navegación en la página de login
-  if (pathname === '/login') return null;
+  // No mostrar la barra de navegación en login ni en pantallas de admin
+  if (pathname === '/login' || pathname?.startsWith('/admin')) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-4 px-4">

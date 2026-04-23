@@ -20,8 +20,6 @@ public class Capsula {
     @Column(name = "room_number", nullable = false, unique = true)
     private int roomNumber;
 
-    @Column(name = "is_reserved", nullable = false)
-    private boolean isReserved;
 
     // Claves foráneas hacia Hostal y Gestor
     @Column(name = "hostel_id")
