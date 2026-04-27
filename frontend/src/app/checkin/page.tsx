@@ -9,18 +9,15 @@ export default function CheckInPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const role = localStorage.getItem("user_role");
-    if (role === "ADMIN") {
-      router.push("/admin/dashboard");
-    }
-  }, [router]);
+    // La redirección inicial y auto-fetch se movieron al final para no chocar con dependencias
+  }, []);
 
   const [step, setStep] = useState(1);
   const [reservations, setReservations] = useState<any[]>([]);
   const [reservationId, setReservationId] = useState("");
   const [dniInput, setDniInput] = useState("");
   const [form, setForm] = useState({
-    dni: "", firstName: "", lastName: "", email: "",
+    dni: "",
     acceptTerms: false,
   });
   const [dniPhoto, setDniPhoto] = useState<File | null>(null);
@@ -28,12 +25,13 @@ export default function CheckInPage() {
   const [pin, setPin] = useState("");
   const [scanning, setScanning] = useState(false);
 
-  const handleDniLookup = async () => {
-    if (!dniInput.trim()) { toast.error("Introduce tu DNI primero."); return; }
+  const handleDniLookup = async (dniToSearch?: string) => {
+    const targetDni = dniToSearch || dniInput.trim();
+    if (!targetDni) { toast.error("Introduce tu DNI primero."); return; }
     setScanning(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`/api/v1/reservations/by-dni/${dniInput.trim().toUpperCase()}`, {
+      const res = await fetch(`/api/v1/reservations/by-dni/${targetDni.toUpperCase()}`, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {}
       });
       if (!res.ok) { toast.error("No se encontró una reserva activa para ese DNI."); return; }
@@ -44,7 +42,7 @@ export default function CheckInPage() {
         return;
       }
       
-      setForm(f => ({ ...f, dni: dniInput.trim().toUpperCase(), firstName: "", lastName: "" }));
+      setForm(f => ({ ...f, dni: targetDni.toUpperCase() }));
 
       if (data.length === 1) {
         setReservationId(data[0].id);
@@ -57,15 +55,28 @@ export default function CheckInPage() {
     finally { setScanning(false); }
   };
 
+  useEffect(() => {
+    const role = localStorage.getItem("user_role");
+    const userDni = localStorage.getItem("user_dni");
+    if (role === "ADMIN") {
+      router.push("/admin/dashboard");
+      return;
+    }
+    
+    // Auto-búsqueda si ya hay un DNI guardado (usuario logueado)
+    if (userDni) {
+      setDniInput(userDni);
+      handleDniLookup(userDni);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const selectReservation = (id: string) => {
     setReservationId(id);
     setStep(3);
   };
 
   const handleCheckIn = async () => {
-    if (!form.firstName || !form.lastName || !form.email || !form.dni) {
-      toast.error("Todos los campos personales son obligatorios."); return;
-    }
     if (!dniPhoto) {
       toast.error("Es obligatorio subir una foto de tu DNI."); return;
     }
@@ -78,9 +89,6 @@ export default function CheckInPage() {
       
       const formData = new FormData();
       formData.append("dni", form.dni);
-      formData.append("firstName", form.firstName);
-      formData.append("lastName", form.lastName);
-      formData.append("email", form.email);
       formData.append("dniPhoto", dniPhoto);
 
       const res = await fetch(`/api/v1/checkin/${reservationId}`, {
@@ -140,7 +148,7 @@ export default function CheckInPage() {
             </div>
 
             <div
-              onClick={handleDniLookup}
+              onClick={() => handleDniLookup()}
               className="border-2 border-dashed border-[#4ABDE8]/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer hover:bg-[#4ABDE8]/5 active:scale-95 transition-all"
             >
               <div className={`p-5 rounded-full ${scanning ? 'bg-[#4ABDE8]/20 animate-pulse' : 'bg-[#4ABDE8]/10'}`}>
@@ -194,22 +202,8 @@ export default function CheckInPage() {
             </div>
 
             <div>
-              <label className="form-label">DNI / NIF</label>
-              <input className="input-underline" value={form.dni} readOnly />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="form-label">Nombre</label>
-                <input className="input-underline" value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
-              </div>
-              <div>
-                <label className="form-label">Apellidos</label>
-                <input className="input-underline" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
-              </div>
-            </div>
-            <div>
-              <label className="form-label">Email de contacto</label>
-              <input type="email" className="input-underline" placeholder="tu@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              <label className="form-label">DNI / NIF Identificado</label>
+              <input className="input-underline opacity-50 cursor-not-allowed" value={form.dni} readOnly />
             </div>
             
             <label className="flex items-center gap-3 cursor-pointer mt-4">

@@ -26,12 +26,11 @@ public class CheckInService {
     private final GuestRepository guestRepository;
 
     @Transactional
-    public String performDigitalCheckIn(UUID reservationId, String scannedDni, String firstName, String lastName, String email, MultipartFile dniPhoto) {
+    public String performDigitalCheckIn(UUID reservationId, String scannedDni, MultipartFile dniPhoto) {
         
         // --- VALIDACIÓN ESTRICTA ---
-        if (!StringUtils.hasText(scannedDni) || !StringUtils.hasText(firstName) 
-            || !StringUtils.hasText(lastName) || !StringUtils.hasText(email)) {
-            throw new IllegalArgumentException("Todos los campos personales son obligatorios para hacer el check-in.");
+        if (!StringUtils.hasText(scannedDni)) {
+            throw new IllegalArgumentException("El DNI es obligatorio para hacer el check-in.");
         }
         
         if (dniPhoto == null || dniPhoto.isEmpty()) {
@@ -76,24 +75,7 @@ public class CheckInService {
             throw new IllegalStateException("Error al guardar la foto del DNI: " + ex.getMessage());
         }
 
-        // Registrar o actualizar el huésped con los originales
-        Optional<Huesped> guestOpt = guestRepository.findById(reservation.getGuest().getDni());
-        if (guestOpt.isEmpty()) {
-            Huesped newGuest = Huesped.builder()
-                    .dni(reservation.getGuest().getDni())
-                    .firstName(firstName)
-                    .lastName(lastName)
-                    .email(email)
-                    .password(UUID.randomUUID().toString())
-                    .role("USER")
-                    .build();
-            try {
-                guestRepository.save(newGuest);
-            } catch (Exception e) {
-                // Si falla por email duplicado u otra constraint, lo propagamos limpiamente
-                throw new IllegalArgumentException("No se pudo registrar al usuario. Es posible que el email introducido ya exista.");
-            }
-        }
+        // El huésped ya existe obligatoriamente, no necesitamos actualizar sus datos aquí
 
         // Generar PIN único de 6 cifras
         String rawPin = String.format("%06d", new Random().nextInt(999999));

@@ -3,9 +3,11 @@ package com.touristcocoon.controller;
 import com.touristcocoon.domain.Capsula;
 import com.touristcocoon.domain.Huesped;
 import com.touristcocoon.domain.Reserva;
+import com.touristcocoon.domain.RegistroAcceso;
 import com.touristcocoon.repository.CapsuleRepository;
 import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.repository.ReservationRepository;
+import com.touristcocoon.repository.AccessRecordRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,7 @@ public class AdminController {
     private final CapsuleRepository capsuleRepository;
     private final ReservationRepository reservationRepository;
     private final GuestRepository guestRepository;
+    private final AccessRecordRepository accessRecordRepository;
 
     private boolean checkAdmin() {
         String principalDni = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -64,6 +67,44 @@ public class AdminController {
         long totalReservations = all.size();
 
         return ResponseEntity.ok(new DashboardMetrics(totalCapsules, occupiedCapsules, freeCapsules, activeReservations, futureReservations, totalReservations));
+    }
+
+    @GetMapping("/audit-calendar")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAuditCalendar() {
+        if (!checkAdmin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado.");
+
+        List<Capsula> allCapsules = capsuleRepository.findAll();
+        List<Reserva> allReservations = reservationRepository.findAll();
+        List<RegistroAcceso> allLogs = accessRecordRepository.findAll();
+
+        List<AuditCapsuleDTO> auditData = allCapsules.stream().map(capsula -> {
+            List<AuditReservationDTO> resList = allReservations.stream()
+                    .filter(r -> r.getCapsula() != null && r.getCapsula().getId().equals(capsula.getId()))
+                    .map(r -> new AuditReservationDTO(
+                            r.getStartDate(),
+                            r.getEndDate(),
+                            r.getStatus().name(),
+                            r.getGuest() != null ? r.getGuest().getFirstName() + " " + r.getGuest().getLastName() : "Desconocido"
+                    )).collect(Collectors.toList());
+
+            List<AuditLogDTO> logList = allLogs.stream()
+                    .filter(l -> l.getCapsuleId().equals(capsula.getId()))
+                    .map(l -> new AuditLogDTO(
+                            l.getTimestamp().toString(),
+                            l.getAction().name(),
+                            l.getGuestDni()
+                    )).collect(Collectors.toList());
+
+            return new AuditCapsuleDTO(
+                    capsula.getId(),
+                    capsula.getRoomNumber(),
+                    resList,
+                    logList
+            );
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(auditData);
     }
 
     @PostMapping("/capsules")
@@ -222,5 +263,28 @@ public class AdminController {
         private String firstName;
         private String lastName;
         private String email;
+    }
+
+    @Data
+    public static class AuditCapsuleDTO {
+        private final UUID capsuleId;
+        private final Integer roomNumber;
+        private final List<AuditReservationDTO> reservations;
+        private final List<AuditLogDTO> accessLogs;
+    }
+
+    @Data
+    public static class AuditReservationDTO {
+        private final LocalDate startDate;
+        private final LocalDate endDate;
+        private final String status;
+        private final String guestName;
+    }
+
+    @Data
+    public static class AuditLogDTO {
+        private final String timestamp;
+        private final String action;
+        private final String guestDni;
     }
 }

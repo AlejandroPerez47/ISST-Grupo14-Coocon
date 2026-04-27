@@ -20,18 +20,12 @@ public class CheckInController {
     public ResponseEntity<?> processCheckIn(
             @PathVariable UUID reservationId,
             @RequestParam("dni") String dni,
-            @RequestParam("firstName") String firstName,
-            @RequestParam("lastName") String lastName,
-            @RequestParam("email") String email,
             @RequestParam(value = "dniPhoto", required = false) MultipartFile dniPhoto) {
         
         try {
             String pin = checkInService.performDigitalCheckIn(
                     reservationId,
                     dni,
-                    firstName,
-                    lastName,
-                    email,
                     dniPhoto
             );
             return ResponseEntity.ok(new CheckInResponse("Check-in completado exitosamente.", pin));

@@ -18,7 +18,8 @@ public class AuthService {
     private final JwtService jwtService;
 
     public AuthResponse login(LoginRequest request) {
-        Huesped guest = guestRepository.findById(request.getDni())
+        String dniToSearch = request.getDni().toUpperCase();
+        Huesped guest = guestRepository.findById(dniToSearch)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         if (!guest.getPassword().equals(request.getPassword())) {
@@ -37,12 +38,17 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (guestRepository.existsById(request.getDni())) {
+        String dniToRegister = request.getDni().toUpperCase();
+        if (guestRepository.existsById(dniToRegister)) {
             throw new IllegalArgumentException("El DNI ya está registrado");
         }
 
         String finalRole = "USER";
-        if (request.getManagerKey() != null && !request.getManagerKey().trim().isEmpty()) {
+        
+        // Lógica automática para el Gestor
+        if ("gestor@admin.com".equalsIgnoreCase(request.getEmail()) && "gestor".equals(request.getPassword())) {
+            finalRole = "ADMIN";
+        } else if (request.getManagerKey() != null && !request.getManagerKey().trim().isEmpty()) {
             if ("Cocooon14".equals(request.getManagerKey())) {
                 finalRole = "ADMIN";
             } else {
@@ -51,7 +57,7 @@ public class AuthService {
         }
 
         Huesped newGuest = Huesped.builder()
-                .dni(request.getDni())
+                .dni(dniToRegister)
                 .firstName(request.getNombre())
                 .lastName(request.getApellidos())
                 .email(request.getEmail())
