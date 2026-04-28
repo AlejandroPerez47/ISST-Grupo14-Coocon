@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.regex.Pattern;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -38,9 +40,33 @@ public class AuthService {
                 .build();
     }
 
+    // Regex RFC 5322 simplificada para validar formato de email
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+
+    // Regex para DNI español: exactamente 8 dígitos seguidos de 1 letra
+    private static final Pattern DNI_PATTERN = Pattern.compile(
+            "^[0-9]{8}[A-Za-z]$");
+
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        String dniToRegister = request.getDni().toUpperCase();
+
+        // --- Validaciones de integridad de datos ---
+        String email = request.getEmail();
+        if (email == null || !EMAIL_PATTERN.matcher(email.trim()).matches()) {
+            throw new IllegalArgumentException(
+                    "El formato del email no es válido. Ejemplo esperado: usuario@dominio.com");
+        }
+
+        String dni = request.getDni();
+        if (dni == null || !DNI_PATTERN.matcher(dni.trim()).matches()) {
+            throw new IllegalArgumentException(
+                    "El formato del DNI no es válido. Se requieren 8 números seguidos de 1 letra (ej: 12345678A)");
+        }
+
+        // --- Fin validaciones ---
+
+        String dniToRegister = dni.toUpperCase();
         if (guestRepository.existsById(dniToRegister)) {
             throw new IllegalArgumentException("El DNI ya está registrado");
         }
