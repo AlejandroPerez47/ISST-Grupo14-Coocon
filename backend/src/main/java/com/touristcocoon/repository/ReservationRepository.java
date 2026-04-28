@@ -48,4 +48,16 @@ public interface ReservationRepository extends JpaRepository<Reserva, UUID> {
     /** Reservas por cápsula (fetch join con guest para evitar N+1 en audit-calendar) */
     @Query("SELECT r FROM Reserva r JOIN FETCH r.guest WHERE r.capsula.id = :capsuleId")
     List<Reserva> findByCapsulaIdWithGuest(@Param("capsuleId") UUID capsuleId);
+
+    /** Reservas activas de un huésped que se solapan con un rango de fechas dado */
+    @Query("SELECT r FROM Reserva r " +
+           "WHERE LOWER(r.guest.dni) = LOWER(:guestDni) " +
+           "AND r.status NOT IN (:excludedStatuses) " +
+           "AND r.startDate <= :endDate " +
+           "AND r.endDate >= :startDate")
+    List<Reserva> findOverlappingActiveByGuestDni(
+            @Param("guestDni") String guestDni,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("excludedStatuses") Collection<Reserva.EstadoReserva> excludedStatuses);
 }

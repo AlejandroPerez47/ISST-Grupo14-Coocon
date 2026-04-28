@@ -32,6 +32,15 @@ public class ReservationService {
             throw new IllegalArgumentException("Fechas de reserva inválidas.");
         }
 
+        // Rule 0: No overlapping active reservations for the same guest
+        List<Reserva> overlapping = reservationRepository.findOverlappingActiveByGuestDni(
+                dni, startDate, endDate,
+                List.of(Reserva.EstadoReserva.CANCELADA, Reserva.EstadoReserva.COMPLETADA));
+        if (!overlapping.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Ya tienes una reserva activa que se solapa con estas fechas.");
+        }
+
         // Rule 1: Max 7 consecutive nights
         long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
         if (daysBetween > 7) {
