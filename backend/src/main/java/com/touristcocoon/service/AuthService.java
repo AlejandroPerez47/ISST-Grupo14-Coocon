@@ -7,6 +7,7 @@ import com.touristcocoon.dto.RegisterRequest;
 import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +17,14 @@ public class AuthService {
 
     private final GuestRepository guestRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthResponse login(LoginRequest request) {
         String dniToSearch = request.getDni().toUpperCase();
         Huesped guest = guestRepository.findById(dniToSearch)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        if (!guest.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), guest.getPassword())) {
             throw new IllegalArgumentException("Contraseña incorrecta");
         }
 
@@ -61,7 +63,7 @@ public class AuthService {
                 .firstName(request.getNombre())
                 .lastName(request.getApellidos())
                 .email(request.getEmail())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .role(finalRole)
                 .build();
 

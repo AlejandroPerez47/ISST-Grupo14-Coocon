@@ -1,5 +1,7 @@
 package com.touristcocoon.security;
 
+import com.touristcocoon.domain.Huesped;
+import com.touristcocoon.repository.GuestRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,19 +9,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final GuestRepository guestRepository;
 
     @Override
     protected void doFilterInternal(
@@ -41,12 +45,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             userDni = jwtService.extractUsername(jwt);
             if (userDni != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // We use DNI as the principal name. No need for full UserDetailsService lookup for this simple validation.
                 if (jwtService.isTokenValid(jwt, userDni)) {
+                    // Cargar el rol del usuario desde la BD para poblar las GrantedAuthorities
+                    var authorities = guestRepository.findById(userDni)
+                            .map(Huesped::getRole)
+                            .map(role -> List.of(new SimpleGrantedAuthority("ROLE_" + role)))
+                            .orElse(List.of());
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDni,
                             null,
-                            new ArrayList<>()
+                            authorities
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);

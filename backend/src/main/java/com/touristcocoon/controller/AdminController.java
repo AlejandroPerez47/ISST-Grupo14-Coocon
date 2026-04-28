@@ -1,7 +1,6 @@
 package com.touristcocoon.controller;
 
 import com.touristcocoon.domain.Capsula;
-import com.touristcocoon.domain.Huesped;
 import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.domain.RegistroAcceso;
 import com.touristcocoon.repository.CapsuleRepository;
@@ -12,7 +11,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +24,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final CapsuleRepository capsuleRepository;
@@ -32,64 +32,52 @@ public class AdminController {
     private final GuestRepository guestRepository;
     private final AccessRecordRepository accessRecordRepository;
 
-    private boolean checkAdmin() {
-        String principalDni = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Optional<Huesped> guestOpt = guestRepository.findById(principalDni);
-        return guestOpt.isPresent() && "ADMIN".equals(guestOpt.get().getRole());
-    }
-
     @GetMapping("/dashboard")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getDashboardMetrics() {
-        if (!checkAdmin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado. Se requiere nivel Gestor.");
-
         long totalCapsules = capsuleRepository.count();
-        List<Reserva> all = reservationRepository.findAll();
         LocalDate today = LocalDate.now();
-        
+
         // Cápsulas ocupadas = cápsulas distintas con reserva CHECKIN_HECHO cuyo rango incluye hoy
-        long occupiedCapsules = all.stream()
-                .filter(r -> r.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO)
-                .filter(r -> !today.isBefore(r.getStartDate()) && !today.isAfter(r.getEndDate()))
-                .map(r -> r.getCapsula().getId())
-                .distinct()
-                .count();
-                
+        long occupiedCapsules = reservationRepository.countDistinctOccupiedCapsules(
+                Reserva.EstadoReserva.CHECKIN_HECHO, today);
+
         long freeCapsules = totalCapsules - occupiedCapsules;
 
-        long activeReservations = all.stream()
-                .filter(r -> r.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO)
-                .filter(r -> !today.isBefore(r.getStartDate()) && !today.isAfter(r.getEndDate()))
-                .count();
-        long futureReservations = all.stream()
-                .filter(r -> r.getStatus() == Reserva.EstadoReserva.PENDIENTE || r.getStatus() == Reserva.EstadoReserva.CONFIRMADA)
-                .count();
-        long totalReservations = all.size();
+        long activeReservations = reservationRepository.countByStatusAndDateRange(
+                Reserva.EstadoReserva.CHECKIN_HECHO, today);
 
-        return ResponseEntity.ok(new DashboardMetrics(totalCapsules, occupiedCapsules, freeCapsules, activeReservations, futureReservations, totalReservations));
+        long futureReservations = reservationRepository.countByStatusIn(
+                List.of(Reserva.EstadoReserva.PENDIENTE, Reserva.EstadoReserva.CONFIRMADA));
+
+        long totalReservations = reservationRepository.count();
+
+        return ResponseEntity.ok(new DashboardMetrics(
+                totalCapsules, occupiedCapsules, freeCapsules,
+                activeReservations, futureReservations, totalReservations));
     }
 
     @GetMapping("/audit-calendar")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getAuditCalendar() {
-        if (!checkAdmin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado.");
-
         List<Capsula> allCapsules = capsuleRepository.findAll();
-        List<Reserva> allReservations = reservationRepository.findAll();
-        List<RegistroAcceso> allLogs = accessRecordRepository.findAll();
 
         List<AuditCapsuleDTO> auditData = allCapsules.stream().map(capsula -> {
-            List<AuditReservationDTO> resList = allReservations.stream()
-                    .filter(r -> r.getCapsula() != null && r.getCapsula().getId().equals(capsula.getId()))
+            // Consulta de reservas filtrada por cápsula (con JOIN FETCH para evitar N+1)
+            List<AuditReservationDTO> resList = reservationRepository
+                    .findByCapsulaIdWithGuest(capsula.getId()).stream()
                     .map(r -> new AuditReservationDTO(
                             r.getStartDate(),
                             r.getEndDate(),
                             r.getStatus().name(),
-                            r.getGuest() != null ? r.getGuest().getFirstName() + " " + r.getGuest().getLastName() : "Desconocido"
+                            r.getGuest() != null
+                                    ? r.getGuest().getFirstName() + " " + r.getGuest().getLastName()
+                                    : "Desconocido"
                     )).collect(Collectors.toList());
 
-            List<AuditLogDTO> logList = allLogs.stream()
-                    .filter(l -> l.getCapsuleId().equals(capsula.getId()))
+            // Consulta de logs filtrada por cápsula
+            List<AuditLogDTO> logList = accessRecordRepository
+                    .findByCapsuleIdOrderByTimestampDesc(capsula.getId()).stream()
                     .map(l -> new AuditLogDTO(
                             l.getTimestamp().toString(),
                             l.getAction().name(),
@@ -109,8 +97,6 @@ public class AdminController {
 
     @PostMapping("/capsules")
     public ResponseEntity<?> createCapsule(@RequestBody CapsuleRequest request) {
-        if (!checkAdmin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado.");
-
         if (capsuleRepository.findByRoomNumber(request.getRoomNumber()).isPresent()) {
             return ResponseEntity.badRequest().body("La habitación con número " + request.getRoomNumber() + " ya existe.");
         }
@@ -118,7 +104,7 @@ public class AdminController {
         Capsula cap = Capsula.builder()
                 .roomNumber(request.getRoomNumber())
                 .build();
-        
+
         capsuleRepository.save(cap);
         return ResponseEntity.ok("Cápsula creada exitosamente.");
     }
@@ -126,10 +112,12 @@ public class AdminController {
     @GetMapping("/active-guests")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getActiveGuests() {
-        if (!checkAdmin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado.");
+        List<Reserva.EstadoReserva> activeStatuses = List.of(
+                Reserva.EstadoReserva.CONFIRMADA,
+                Reserva.EstadoReserva.CHECKIN_HECHO);
 
-        List<ActiveGuestDTO> activeGuests = reservationRepository.findAll().stream()
-                .filter(r -> r.getStatus() == Reserva.EstadoReserva.CONFIRMADA || r.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO)
+        List<ActiveGuestDTO> activeGuests = reservationRepository
+                .findByStatusInWithGuestAndCapsule(activeStatuses).stream()
                 .map(r -> {
                     String firstName = "Desconocido";
                     String lastName = "";
@@ -164,13 +152,11 @@ public class AdminController {
     @GetMapping("/guests/{dni}")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getGuestProfile(@PathVariable String dni) {
-        if (!checkAdmin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado.");
-
-        Optional<Huesped> guestOpt = guestRepository.findById(dni);
+        var guestOpt = guestRepository.findById(dni);
         if (guestOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Huésped no encontrado.");
         }
-        Huesped guest = guestOpt.get();
+        var guest = guestOpt.get();
 
         List<ReservationDTO> resList = reservationRepository.findByGuestDniIgnoreCase(dni).stream()
                 .map(r -> new ReservationDTO(
@@ -196,14 +182,12 @@ public class AdminController {
     @PutMapping("/guests/{dni}")
     @Transactional
     public ResponseEntity<?> updateGuestProfile(@PathVariable String dni, @RequestBody UpdateGuestRequest request) {
-        if (!checkAdmin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado.");
-
-        Optional<Huesped> guestOpt = guestRepository.findById(dni);
+        var guestOpt = guestRepository.findById(dni);
         if (guestOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Huésped no encontrado.");
         }
 
-        Huesped guest = guestOpt.get();
+        var guest = guestOpt.get();
         guest.setFirstName(request.getFirstName());
         guest.setLastName(request.getLastName());
         guest.setEmail(request.getEmail());
