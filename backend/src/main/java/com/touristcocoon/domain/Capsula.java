@@ -20,12 +20,4 @@ public class Capsula {
     @Column(name = "room_number", nullable = false, unique = true)
     private int roomNumber;
 
-
-    // Claves foráneas hacia Hostal y Gestor
-    @Column(name = "hostel_id")
-    private UUID hostelId;
-
-    @Column(name = "staff_id")
-    private UUID staffId;
-
 }
