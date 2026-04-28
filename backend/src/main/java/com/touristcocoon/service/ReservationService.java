@@ -28,8 +28,12 @@ public class ReservationService {
     @Transactional
     public Reserva createReservation(String dni, LocalDate startDate, LocalDate endDate) {
         // Validate dates
-        if (startDate.isBefore(LocalDate.now()) || endDate.isBefore(startDate)) {
+        if (startDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Fechas de reserva inválidas.");
+        }
+        if (!startDate.isBefore(endDate)) {
+            throw new IllegalArgumentException(
+                    "La reserva debe durar al menos 1 noche. La fecha de salida debe ser posterior a la de entrada.");
         }
 
         // Rule 0: No overlapping active reservations for the same guest
