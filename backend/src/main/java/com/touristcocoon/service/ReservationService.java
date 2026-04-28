@@ -84,25 +84,33 @@ public class ReservationService {
     }
 
     private void validateMax15DaysPerMonth(String dni, LocalDate startDate, LocalDate endDate) {
-        // Obtenemos las reservas del huésped en el mes actual para validarlo (simplificado)
+        // Límites del mes natural evaluado (basado en startDate de la nueva reserva)
+        LocalDate firstDayOfMonth = startDate.withDayOfMonth(1);
+        LocalDate lastDayOfMonth  = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        // Días de la NUEVA reserva que caen estrictamente dentro del mes evaluado
+        LocalDate clampedNewStart = startDate.isBefore(firstDayOfMonth) ? firstDayOfMonth : startDate;
+        LocalDate clampedNewEnd   = endDate.isAfter(lastDayOfMonth) ? lastDayOfMonth : endDate;
+        long newDaysInMonth = Math.max(0, ChronoUnit.DAYS.between(clampedNewStart, clampedNewEnd));
+
+        // Días acumulados de reservas previas (no canceladas) dentro del mismo mes
         List<Reserva> userReservations = reservationRepository.findByGuestDniIgnoreCase(dni);
-        
-        int month = startDate.getMonthValue();
-        int year = startDate.getYear();
-        
-        long totalDaysInMonth = userReservations.stream()
+
+        long previousDaysInMonth = userReservations.stream()
                 .filter(r -> r.getStatus() != Reserva.EstadoReserva.CANCELADA)
-                .filter(r -> r.getStartDate().getMonthValue() == month && r.getStartDate().getYear() == year)
-                .mapToLong(r -> ChronoUnit.DAYS.between(
-                        r.getStartDate().isBefore(startDate.withDayOfMonth(1)) ? startDate.withDayOfMonth(1) : r.getStartDate(),
-                        r.getEndDate().isAfter(startDate.withDayOfMonth(startDate.lengthOfMonth())) ? startDate.withDayOfMonth(startDate.lengthOfMonth()) : r.getEndDate()
-                ))
+                // Solo reservas que se solapen con el mes evaluado
+                .filter(r -> !r.getEndDate().isBefore(firstDayOfMonth) && !r.getStartDate().isAfter(lastDayOfMonth))
+                .mapToLong(r -> {
+                    // Recortamos (clamp) al rango del mes natural
+                    LocalDate effStart = r.getStartDate().isBefore(firstDayOfMonth) ? firstDayOfMonth : r.getStartDate();
+                    LocalDate effEnd   = r.getEndDate().isAfter(lastDayOfMonth) ? lastDayOfMonth : r.getEndDate();
+                    return Math.max(0, ChronoUnit.DAYS.between(effStart, effEnd));
+                })
                 .sum();
-                
-        long daysRequested = ChronoUnit.DAYS.between(startDate, endDate);
-        
-        if (totalDaysInMonth + daysRequested > 15) {
-            throw new IllegalArgumentException("La reserva hace que el huésped supere los 15 días naturales permitidos por mes.");
+
+        if (previousDaysInMonth + newDaysInMonth > 15) {
+            throw new IllegalArgumentException(
+                    "La reserva hace que el huésped supere los 15 días naturales permitidos por mes.");
         }
     }
 
