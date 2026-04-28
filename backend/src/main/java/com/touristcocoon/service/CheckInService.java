@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -54,6 +55,10 @@ public class CheckInService {
 
         if (reservation.getStatus() == Reserva.EstadoReserva.COMPLETADA) {
             throw new IllegalStateException("Esta reserva ya fue completada.");
+        }
+
+        if (LocalDate.now().isBefore(reservation.getStartDate())) {
+            throw new IllegalStateException("No puedes hacer el check-in antes de la fecha de inicio de tu reserva.");
         }
         
         // --- GUARDADO DE ARCHIVOS ---
