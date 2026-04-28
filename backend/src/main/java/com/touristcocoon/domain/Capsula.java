@@ -20,8 +20,9 @@ public class Capsula {
     @Column(name = "room_number", nullable = false, unique = true)
     private int roomNumber;
 
-    @Column(name = "is_reserved", nullable = false)
-    private boolean isReserved;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private EstadoCapsula status;
 
     // Claves foráneas hacia Hostal y Gestor
     @Column(name = "hostel_id")
@@ -30,4 +31,9 @@ public class Capsula {
     @Column(name = "staff_id")
     private UUID staffId;
 
+    public enum EstadoCapsula {
+        DISPONIBLE,
+        OCUPADA,
+        PENDIENTE_LIMPIEZA
+    }
 }
