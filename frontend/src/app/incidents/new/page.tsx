@@ -87,7 +87,7 @@ export default function NewIncidentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5EFE6] max-w-md mx-auto flex flex-col">
+    <div className="min-h-screen bg-transparent max-w-md mx-auto flex flex-col">
 
       {/* Header */}
       <div

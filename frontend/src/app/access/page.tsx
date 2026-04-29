@@ -114,7 +114,7 @@ export default function AccessPage() {
       </div>
 
       {/* Card with keypad */}
-      <div className="bg-[#F5EFE6] mx-4 rounded-3xl p-5 flex-1 flex flex-col gap-4 mb-28">
+      <div className="bg-transparent mx-4 rounded-3xl p-5 flex-1 flex flex-col gap-4 mb-28">
 
         {/* DNI field */}
         <div>

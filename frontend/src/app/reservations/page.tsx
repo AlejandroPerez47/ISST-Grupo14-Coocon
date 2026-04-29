@@ -49,7 +49,7 @@ export default function ReservationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col max-w-md mx-auto relative antialiased">
+    <div className="min-h-screen bg-transparent flex flex-col max-w-md mx-auto relative antialiased">
       
       {/* ── HEADER / HERO ── */}
       <div

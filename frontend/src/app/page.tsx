@@ -25,7 +25,7 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#F5EFE6] flex items-center justify-center">
+    <div className="min-h-screen bg-transparent flex items-center justify-center">
       <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#1B2F6E] to-[#4ABDE8] flex items-center justify-center animate-pulse shadow-2xl shadow-[#1B2F6E]/20">
         <span className="text-white font-black text-3xl">C</span>
       </div>

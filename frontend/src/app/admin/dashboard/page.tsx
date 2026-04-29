@@ -213,7 +213,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans max-w-5xl mx-auto md:p-6 p-0">
+    <div className="min-h-screen bg-transparent font-sans max-w-5xl mx-auto md:p-6 p-0">
       
       {/* ── HEADER ── */}
       <div className="bg-[#1B2F6E] md:rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">

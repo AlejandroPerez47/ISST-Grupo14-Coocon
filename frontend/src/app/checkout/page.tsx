@@ -91,7 +91,7 @@ export default function CheckOutPage() {
     step === 1 ? "Selecciona tu reserva" : step === 2 ? "Confirma tu salida" : "¡Hasta pronto!";
 
   return (
-    <div className="min-h-screen bg-[#F5EFE6] max-w-md mx-auto flex flex-col">
+    <div className="min-h-screen bg-transparent max-w-md mx-auto flex flex-col">
 
       {/* Gradient header */}
       <div
@@ -205,7 +205,7 @@ export default function CheckOutPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* Capsule */}
-                    <div className="bg-[#F5EFE6] rounded-2xl p-3 flex flex-col gap-1">
+                    <div className="bg-transparent rounded-2xl p-3 flex flex-col gap-1">
                       <div className="flex items-center gap-1.5 text-[#1B2F6E]">
                         <BedDouble size={14} />
                         <span className="text-xs font-semibold uppercase tracking-wide">Cápsula</span>
@@ -216,7 +216,7 @@ export default function CheckOutPage() {
                     </div>
 
                     {/* Nights */}
-                    <div className="bg-[#F5EFE6] rounded-2xl p-3 flex flex-col gap-1">
+                    <div className="bg-transparent rounded-2xl p-3 flex flex-col gap-1">
                       <div className="flex items-center gap-1.5 text-[#1B2F6E]">
                         <Calendar size={14} />
                         <span className="text-xs font-semibold uppercase tracking-wide">Noches</span>

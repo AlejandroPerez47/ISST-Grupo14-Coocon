@@ -59,7 +59,7 @@ export default function MyIncidentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5EFE6] max-w-md mx-auto flex flex-col">
+    <div className="min-h-screen bg-transparent max-w-md mx-auto flex flex-col">
 
       <div
         className="relative px-5 pt-12 pb-8 rounded-b-[2.5rem] shadow-xl shadow-navy/10"
