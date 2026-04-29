@@ -8,6 +8,7 @@ import { ArrowRight, Star, LogOut } from 'lucide-react';
 export default function ReservationsPage() {
   const router = useRouter();
   const [userName, setUserName] = useState('');
+  const [hasActiveCheckIn, setHasActiveCheckIn] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('user_role');
@@ -20,6 +21,26 @@ export default function ReservationsPage() {
     if (name) {
       setUserName(name);
     }
+
+    // Check if user has active check-in
+    const checkActiveReservations = async () => {
+      const dni = localStorage.getItem('user_dni');
+      const token = localStorage.getItem('auth_token');
+      if (dni && token) {
+        try {
+          const res = await fetch(`/api/v1/checkout/by-dni/${dni}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setHasActiveCheckIn(data && data.length > 0);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    checkActiveReservations();
   }, [router]);
 
   const handleLogout = () => {
@@ -80,8 +101,10 @@ export default function ReservationsPage() {
             { href: '/checkout', emoji: '🚪', label: 'Check-out' },
             { href: '/access', emoji: '🔑', label: 'Acceso' },
             { href: '/reservations/my', emoji: '📋', label: 'Mis Reservas' },
-            { href: '/incidents/new', emoji: '⚠️', label: 'Incidencia' },
-            { href: '/incidents/my', emoji: '📊', label: 'Mis Incidencias' },
+            ...(hasActiveCheckIn ? [
+              { href: '/incidents/new', emoji: '⚠️', label: 'Incidencia' },
+              { href: '/incidents/my', emoji: '📊', label: 'Mis Incidencias' }
+            ] : [])
           ].map(a => (
             <Link key={a.href} href={a.href}>
               <div className="bg-white rounded-[2rem] p-4 shadow-xl shadow-navy/5 border border-white flex flex-col items-center gap-2 cursor-pointer hover:shadow-navy/10 hover:-translate-y-1 transition-all active:scale-95 group">

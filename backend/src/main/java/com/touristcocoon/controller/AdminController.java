@@ -156,6 +156,46 @@ public class AdminController {
         return ResponseEntity.ok(activeGuests);
     }
 
+    @GetMapping("/future-reservations")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getFutureReservations() {
+        List<Reserva.EstadoReserva> futureStatuses = List.of(
+                Reserva.EstadoReserva.PENDIENTE,
+                Reserva.EstadoReserva.CONFIRMADA);
+
+        List<ActiveGuestDTO> futureReservations = reservationRepository
+                .findByStatusInWithGuestAndCapsule(futureStatuses).stream()
+                .map(r -> {
+                    String firstName = "Desconocido";
+                    String lastName = "";
+                    String dni = null;
+                    if (r.getGuest() != null) {
+                        firstName = r.getGuest().getFirstName();
+                        lastName = r.getGuest().getLastName();
+                        dni = r.getGuest().getDni();
+                    }
+
+                    Integer roomNumber = null;
+                    if (r.getCapsula() != null) {
+                        roomNumber = r.getCapsula().getRoomNumber();
+                    }
+
+                    return new ActiveGuestDTO(
+                            dni,
+                            firstName,
+                            lastName,
+                            r.getId(),
+                            roomNumber,
+                            r.getStartDate(),
+                            r.getEndDate(),
+                            r.getStatus().name()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(futureReservations);
+    }
+
     @GetMapping("/guests/{dni}")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getGuestProfile(@PathVariable String dni) {

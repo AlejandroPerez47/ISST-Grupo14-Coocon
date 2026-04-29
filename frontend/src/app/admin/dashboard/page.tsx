@@ -345,13 +345,20 @@ export default function AdminDashboard() {
                 <p className="text-slate-500 font-medium text-sm mt-1">Cápsulas Ocupadas</p>
               </div>
 
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 items-start">
-                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl mb-2">
+              <button 
+                onClick={() => router.push('/admin/reservations')}
+                className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 items-start text-left hover:shadow-md hover:border-orange-200 hover:-translate-y-1 transition-all cursor-pointer relative overflow-hidden group"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl mb-2 relative z-10">
                   <CalendarDays size={24} />
                 </div>
-                <p className="text-3xl font-black text-slate-800">{metrics.futureReservations}</p>
-                <p className="text-slate-500 font-medium text-sm">Reservas Futuras (Pendientes)</p>
-              </div>
+                <p className="text-3xl font-black text-slate-800 relative z-10">{metrics.futureReservations}</p>
+                <p className="text-slate-500 font-medium text-sm relative z-10">Reservas Futuras (Pendientes)</p>
+                <div className="mt-2 text-xs font-bold text-orange-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity relative z-10">
+                  Ver listado completo <ArrowRight size={12} />
+                </div>
+              </button>
 
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 items-start justify-between">
                  <div>
