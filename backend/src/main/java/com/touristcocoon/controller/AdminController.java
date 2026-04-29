@@ -196,6 +196,39 @@ public class AdminController {
         return ResponseEntity.ok(futureReservations);
     }
 
+    @GetMapping("/guests/search")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> searchGuests(@RequestParam(required = false) String q) {
+        List<GuestProfileDTO> results;
+        if (q == null || q.trim().isEmpty()) {
+            results = guestRepository.findAll().stream()
+                    .map(guest -> new GuestProfileDTO(
+                            guest.getDni(),
+                            guest.getFirstName(),
+                            guest.getLastName(),
+                            guest.getEmail(),
+                            guest.getRole(),
+                            List.of()
+                    ))
+                    .collect(Collectors.toList());
+        } else {
+            results = guestRepository
+                    .findByDniContainingIgnoreCaseOrLastNameContainingIgnoreCase(q, q)
+                    .stream()
+                    .map(guest -> new GuestProfileDTO(
+                            guest.getDni(),
+                            guest.getFirstName(),
+                            guest.getLastName(),
+                            guest.getEmail(),
+                            guest.getRole(),
+                            List.of()
+                    ))
+                    .collect(Collectors.toList());
+        }
+
+        return ResponseEntity.ok(results);
+    }
+
     @GetMapping("/guests/{dni}")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getGuestProfile(@PathVariable String dni) {
@@ -220,6 +253,7 @@ public class AdminController {
                 guest.getFirstName(),
                 guest.getLastName(),
                 guest.getEmail(),
+                guest.getRole(),
                 resList
         );
 
@@ -278,6 +312,7 @@ public class AdminController {
         private final String firstName;
         private final String lastName;
         private final String email;
+        private final String role;
         private final List<ReservationDTO> reservations;
     }
 

@@ -12,7 +12,6 @@ interface ReservationSummary {
   startDate: string;
   endDate: string;
   status: string;
-  capsula?: { roomNumber: number };
 }
 
 export default function CheckOutPage() {

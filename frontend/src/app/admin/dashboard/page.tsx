@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, LayoutDashboard, PlusCircle, CalendarDays, Bed, Activity, Loader2, ArrowRight, ShieldCheck, Clock, AlertTriangle, CheckCircle2, Eye } from "lucide-react";
+import { LogOut, LayoutDashboard, PlusCircle, CalendarDays, Bed, Activity, Loader2, ArrowRight, ShieldCheck, Clock, AlertTriangle, CheckCircle2, Eye, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import { format, addDays, subDays, isSameDay, isWithinInterval, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -368,6 +368,27 @@ export default function AdminDashboard() {
                  <p className="text-5xl font-black text-emerald-500 mt-2">{metrics.freeCapsules}</p>
               </div>
             </div>
+
+            {/* DIRECTORY ACCESS */}
+            <button 
+              onClick={() => router.push('/admin/clients')}
+              className="mt-6 w-full bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md hover:border-indigo-200 hover:-translate-y-1 transition-all cursor-pointer group relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <Search size={24} />
+                </div>
+                <div className="text-left">
+                  <p className="text-lg font-black text-slate-800">Directorio de Clientes (CRM)</p>
+                  <p className="text-slate-500 font-medium text-sm">Buscador avanzado de fichas de huéspedes por DNI o apellido</p>
+                </div>
+              </div>
+              <div className="text-indigo-600 bg-indigo-50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity relative z-10">
+                <ArrowRight size={16} />
+              </div>
+            </button>
+
           </div>
         )}
 
