@@ -23,8 +23,11 @@ public class CheckOutController {
     @GetMapping("/by-dni/{dni}")
     public ResponseEntity<?> getReservationSummary(@PathVariable String dni) {
         try {
-            Reserva reservation = checkOutService.getActiveCheckedInReservation(dni);
-            return ResponseEntity.ok(reservation);
+            java.util.List<Reserva> reservations = checkOutService.getActiveCheckedInReservations(dni);
+            if (reservations.isEmpty()) {
+                return ResponseEntity.status(404).body("No se encontraron reservas con check-in activo para este DNI.");
+            }
+            return ResponseEntity.ok(reservations);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(404).body(e.getMessage());
         }

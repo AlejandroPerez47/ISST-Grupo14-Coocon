@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,15 +20,13 @@ public class CheckOutService {
     private final CapsuleRepository capsuleRepository;
 
     /**
-     * Obtiene la reserva activa (CHECKIN_HECHO) de un huésped para mostrar
+     * Obtiene las reservas activas (CHECKIN_HECHO) de un huésped para mostrar
      * el resumen antes de confirmar el checkout.
      */
-    public Reserva getActiveCheckedInReservation(String guestDni) {
+    public List<Reserva> getActiveCheckedInReservations(String guestDni) {
         return reservationRepository.findByGuestDniIgnoreCase(guestDni).stream()
                 .filter(r -> r.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No se encontró ninguna reserva con check-in activo para el DNI: " + guestDni));
+                .collect(Collectors.toList());
     }
 
     /**

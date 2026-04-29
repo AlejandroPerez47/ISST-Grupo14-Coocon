@@ -77,6 +77,7 @@ export default function ReservationsPage() {
           {[
             { href: '/reservations/new', emoji: '🛏️', label: 'Reservar' },
             { href: '/checkin', emoji: '📲', label: 'Check-in' },
+            { href: '/checkout', emoji: '🚪', label: 'Check-out' },
             { href: '/access', emoji: '🔑', label: 'Acceso' },
             { href: '/reservations/my', emoji: '📋', label: 'Mis Reservas' },
             { href: '/incidents/new', emoji: '⚠️', label: 'Incidencia' },
