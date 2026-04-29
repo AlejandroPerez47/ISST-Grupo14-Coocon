@@ -1,10 +1,12 @@
 package com.touristcocoon.controller;
 
 import com.touristcocoon.domain.Capsula;
+import com.touristcocoon.domain.Incidencia;
 import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.domain.RegistroAcceso;
 import com.touristcocoon.repository.CapsuleRepository;
 import com.touristcocoon.repository.GuestRepository;
+import com.touristcocoon.repository.IncidenciaRepository;
 import com.touristcocoon.repository.ReservationRepository;
 import com.touristcocoon.repository.AccessRecordRepository;
 import lombok.Data;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +34,7 @@ public class AdminController {
     private final ReservationRepository reservationRepository;
     private final GuestRepository guestRepository;
     private final AccessRecordRepository accessRecordRepository;
+    private final IncidenciaRepository incidenciaRepository;
 
     @GetMapping("/dashboard")
     @Transactional(readOnly = true)
@@ -52,9 +56,12 @@ public class AdminController {
 
         long totalReservations = reservationRepository.count();
 
+        long pendingIncidents = incidenciaRepository.countByStatusIn(
+                List.of(Incidencia.EstadoIncidencia.PENDIENTE, Incidencia.EstadoIncidencia.ASIGNADA));
+
         return ResponseEntity.ok(new DashboardMetrics(
                 totalCapsules, occupiedCapsules, freeCapsules,
-                activeReservations, futureReservations, totalReservations));
+                activeReservations, futureReservations, totalReservations, pendingIncidents));
     }
 
     @GetMapping("/audit-calendar")
@@ -205,6 +212,7 @@ public class AdminController {
         private final long activeReservations;
         private final long futureReservations;
         private final long totalReservations;
+        private final long pendingIncidents;
     }
 
     @Data
@@ -270,5 +278,95 @@ public class AdminController {
         private final String timestamp;
         private final String action;
         private final String guestDni;
+    }
+
+    // ── INCIDENCIAS ──
+
+    @GetMapping("/incidents")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAllIncidents() {
+        List<AdminIncidentDTO> incidents = incidenciaRepository.findAllWithDetails().stream()
+                .map(i -> new AdminIncidentDTO(
+                        i.getId(),
+                        i.getReserva().getCapsula() != null ? i.getReserva().getCapsula().getRoomNumber() : null,
+                        i.getGuest().getFirstName() + " " + i.getGuest().getLastName(),
+                        i.getGuest().getDni(),
+                        i.getCategory().name(),
+                        i.getDescription(),
+                        i.getStatus().name(),
+                        i.getCreatedAt().toString(),
+                        i.getResolvedAt() != null ? i.getResolvedAt().toString() : null,
+                        i.getReserva().getId(),
+                        i.getReserva().getStartDate(),
+                        i.getReserva().getEndDate()
+                ))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(incidents);
+    }
+
+    @GetMapping("/incidents/{id}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getIncidentDetail(@PathVariable UUID id) {
+        var incOpt = incidenciaRepository.findByIdWithDetails(id);
+        if (incOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Incidencia no encontrada.");
+        }
+        var i = incOpt.get();
+        AdminIncidentDTO dto = new AdminIncidentDTO(
+                i.getId(),
+                i.getReserva().getCapsula() != null ? i.getReserva().getCapsula().getRoomNumber() : null,
+                i.getGuest().getFirstName() + " " + i.getGuest().getLastName(),
+                i.getGuest().getDni(),
+                i.getCategory().name(),
+                i.getDescription(),
+                i.getStatus().name(),
+                i.getCreatedAt().toString(),
+                i.getResolvedAt() != null ? i.getResolvedAt().toString() : null,
+                i.getReserva().getId(),
+                i.getReserva().getStartDate(),
+                i.getReserva().getEndDate()
+        );
+        return ResponseEntity.ok(dto);
+    }
+
+    @PutMapping("/incidents/{id}/status")
+    @Transactional
+    public ResponseEntity<?> updateIncidentStatus(@PathVariable UUID id, @RequestBody UpdateIncidentStatusRequest request) {
+        var incOpt = incidenciaRepository.findById(id);
+        if (incOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Incidencia no encontrada.");
+        }
+
+        var incident = incOpt.get();
+        incident.setStatus(request.getStatus());
+
+        if (request.getStatus() == Incidencia.EstadoIncidencia.COMPLETADA) {
+            incident.setResolvedAt(LocalDateTime.now());
+        }
+
+        incidenciaRepository.save(incident);
+        return ResponseEntity.ok("Estado de la incidencia actualizado.");
+    }
+
+    @Data
+    public static class AdminIncidentDTO {
+        private final UUID id;
+        private final Integer roomNumber;
+        private final String guestName;
+        private final String guestDni;
+        private final String category;
+        private final String description;
+        private final String status;
+        private final String createdAt;
+        private final String resolvedAt;
+        private final UUID reservationId;
+        private final LocalDate reservationStartDate;
+        private final LocalDate reservationEndDate;
+    }
+
+    @Data
+    public static class UpdateIncidentStatusRequest {
+        private Incidencia.EstadoIncidencia status;
     }
 }

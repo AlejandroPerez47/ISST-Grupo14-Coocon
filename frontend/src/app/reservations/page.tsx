@@ -73,12 +73,14 @@ export default function ReservationsPage() {
       <div className="flex-1 px-4 pt-8 pb-32 space-y-6">
 
         {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { href: '/reservations/new', emoji: '🛏️', label: 'Reservar' },
             { href: '/checkin', emoji: '📲', label: 'Check-in' },
             { href: '/access', emoji: '🔑', label: 'Acceso' },
             { href: '/reservations/my', emoji: '📋', label: 'Mis Reservas' },
+            { href: '/incidents/new', emoji: '⚠️', label: 'Incidencia' },
+            { href: '/incidents/my', emoji: '📊', label: 'Mis Incidencias' },
           ].map(a => (
             <Link key={a.href} href={a.href}>
               <div className="bg-white rounded-[2rem] p-4 shadow-xl shadow-navy/5 border border-white flex flex-col items-center gap-2 cursor-pointer hover:shadow-navy/10 hover:-translate-y-1 transition-all active:scale-95 group">

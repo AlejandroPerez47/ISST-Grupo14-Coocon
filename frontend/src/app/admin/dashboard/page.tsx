@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, LayoutDashboard, PlusCircle, CalendarDays, Bed, Activity, Loader2, ArrowRight, ShieldCheck, Clock } from "lucide-react";
+import { LogOut, LayoutDashboard, PlusCircle, CalendarDays, Bed, Activity, Loader2, ArrowRight, ShieldCheck, Clock, AlertTriangle, CheckCircle2, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import { format, addDays, subDays, isSameDay, isWithinInterval, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -28,13 +28,28 @@ type AuditCapsule = {
   accessLogs: AuditLog[];
 };
 
+type AdminIncident = {
+  id: string;
+  roomNumber: number | null;
+  guestName: string;
+  guestDni: string;
+  category: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  reservationId: string;
+  reservationStartDate: string;
+  reservationEndDate: string;
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
   
-  // Tabs: 'overview' | 'audit'
-  const [activeTab, setActiveTab] = useState<'overview' | 'audit'>('overview');
+  // Tabs: 'overview' | 'audit' | 'incidents'
+  const [activeTab, setActiveTab] = useState<'overview' | 'audit' | 'incidents'>('overview');
 
   // Metrics State
   const [metrics, setMetrics] = useState({
@@ -43,11 +58,16 @@ export default function AdminDashboard() {
     freeCapsules: 0,
     activeReservations: 0,
     futureReservations: 0,
-    totalReservations: 0
+    totalReservations: 0,
+    pendingIncidents: 0
   });
 
   // Audit State
   const [auditData, setAuditData] = useState<AuditCapsule[]>([]);
+
+  // Incidents State
+  const [incidents, setIncidents] = useState<AdminIncident[]>([]);
+  const [selectedIncident, setSelectedIncident] = useState<AdminIncident | null>(null);
 
   // Capsule Form State
   const [showCapsuleForm, setShowCapsuleForm] = useState(false);
@@ -67,6 +87,7 @@ export default function AdminDashboard() {
 
     fetchMetrics();
     fetchAuditData();
+    fetchIncidents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
@@ -99,6 +120,44 @@ export default function AdminDashboard() {
       }
     } catch {
       toast.error("Error al cargar la auditoría");
+    }
+  };
+
+  const fetchIncidents = async () => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/v1/admin/incidents", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setIncidents(await res.json());
+      }
+    } catch {
+      toast.error("Error al cargar incidencias");
+    }
+  };
+
+  const handleUpdateIncidentStatus = async (id: string, newStatus: string) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/v1/admin/incidents/${id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        toast.success("Estado actualizado");
+        fetchIncidents();
+        fetchMetrics();
+        setSelectedIncident(null);
+      } else {
+        toast.error(await res.text());
+      }
+    } catch {
+      toast.error("Error de conexión");
     }
   };
 
@@ -193,7 +252,19 @@ export default function AdminDashboard() {
             className={`pb-3 px-2 font-bold transition-all border-b-2 flex items-center gap-2 ${activeTab === 'audit' ? 'border-sky text-sky' : 'border-transparent text-white/50 hover:text-white'}`}
           >
             <ShieldCheck size={18} />
-            Auditoría de Accesos
+            Auditoría
+          </button>
+          <button 
+            onClick={() => setActiveTab('incidents')}
+            className={`pb-3 px-2 font-bold transition-all border-b-2 flex items-center gap-2 relative ${activeTab === 'incidents' ? 'border-red-400 text-red-400' : 'border-transparent text-white/50 hover:text-white'}`}
+          >
+            <AlertTriangle size={18} />
+            Incidencias
+            {metrics.pendingIncidents > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                {metrics.pendingIncidents}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -414,6 +485,158 @@ export default function AdminDashboard() {
                 <span>Acceso Detectado (Log Inalterable)</span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── INCIDENTS TAB ── */}
+        {activeTab === 'incidents' && (
+          <div className="space-y-4 pb-20">
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <AlertTriangle size={20} className="text-red-500" />
+              Gestión de Incidencias
+            </h2>
+
+            {incidents.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-slate-100">
+                <CheckCircle2 size={40} className="text-emerald-400 mx-auto mb-3" />
+                <p className="font-bold text-slate-800">Sin incidencias</p>
+                <p className="text-slate-400 text-sm">No hay incidencias reportadas.</p>
+              </div>
+            ) : (
+              incidents.map((inc) => {
+                const statusStyle = inc.status === 'PENDIENTE'
+                  ? 'bg-orange-100 text-orange-700 border-orange-200'
+                  : inc.status === 'ASIGNADA'
+                  ? 'bg-blue-100 text-blue-700 border-blue-200'
+                  : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+
+                const categoryLabels: Record<string, string> = {
+                  LIMPIEZA: '🧹 Limpieza', AVERIA: '🔧 Avería', RUIDO: '🔊 Ruido',
+                  CLIMA: '🌡️ Clima', OTRO: '📝 Otro'
+                };
+
+                return (
+                  <div
+                    key={inc.id}
+                    onClick={() => setSelectedIncident(inc)}
+                    className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md hover:border-red-200 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
+                        <AlertTriangle size={22} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800">{categoryLabels[inc.category] || inc.category}</p>
+                        <p className="text-slate-400 text-xs flex items-center gap-1">
+                          <Clock size={10} /> {new Date(inc.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-slate-400">CÁPSULA</p>
+                        <p className="font-black text-slate-700">Nº {inc.roomNumber ?? '—'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-slate-400">HUÉSPED</p>
+                        <p className="font-semibold text-slate-700 text-sm">{inc.guestName}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${statusStyle}`}>
+                        {inc.status}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {/* ── DETAIL MODAL ── */}
+            {selectedIncident && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedIncident(null)}>
+                <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h3 className="text-xl font-black text-slate-800">Detalle de Incidencia</h3>
+                      <p className="text-xs text-slate-400 font-mono mt-1">ID: {selectedIncident.id.split('-')[0]}...</p>
+                    </div>
+                    <button onClick={() => setSelectedIncident(null)} className="text-slate-400 hover:text-slate-600 text-2xl font-bold">×</button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Categoría</p>
+                        <p className="font-bold text-slate-800">{selectedIncident.category}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Cápsula</p>
+                        <p className="font-bold text-slate-800">Nº {selectedIncident.roomNumber ?? '—'}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Huésped</p>
+                        <p className="font-bold text-slate-800">{selectedIncident.guestName}</p>
+                        <p className="text-xs text-slate-400">{selectedIncident.guestDni}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Reportada</p>
+                        <p className="font-bold text-slate-800 text-sm">
+                          {new Date(selectedIncident.createdAt).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-3">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">Reserva asociada</p>
+                      <p className="font-bold text-slate-800 text-sm">
+                        {selectedIncident.reservationStartDate} → {selectedIncident.reservationEndDate}
+                      </p>
+                    </div>
+
+                    {selectedIncident.description && (
+                      <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                        <p className="text-[10px] font-bold text-amber-500 uppercase mb-1">Descripción del cliente</p>
+                        <p className="text-slate-700 text-sm leading-relaxed">{selectedIncident.description}</p>
+                      </div>
+                    )}
+
+                    {selectedIncident.resolvedAt && (
+                      <div className="bg-emerald-50 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-emerald-500 uppercase">Resuelta</p>
+                        <p className="font-bold text-emerald-700 text-sm">
+                          {new Date(selectedIncident.resolvedAt).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4 border-t border-slate-100">
+                      {selectedIncident.status === 'PENDIENTE' && (
+                        <button
+                          onClick={() => handleUpdateIncidentStatus(selectedIncident.id, 'ASIGNADA')}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors"
+                        >
+                          Asignar Personal
+                        </button>
+                      )}
+                      {(selectedIncident.status === 'PENDIENTE' || selectedIncident.status === 'ASIGNADA') && (
+                        <button
+                          onClick={() => handleUpdateIncidentStatus(selectedIncident.id, 'COMPLETADA')}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors"
+                        >
+                          Marcar Completada
+                        </button>
+                      )}
+                      {selectedIncident.status === 'COMPLETADA' && (
+                        <p className="flex-1 text-center text-emerald-600 font-bold py-3 bg-emerald-50 rounded-xl">
+                          ✓ Incidencia resuelta
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
