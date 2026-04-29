@@ -22,7 +22,7 @@ public class CheckOutService {
      * el resumen antes de confirmar el checkout.
      */
     public Reserva getActiveCheckedInReservation(String guestDni) {
-        return reservationRepository.findByGuestDni(guestDni).stream()
+        return reservationRepository.findByGuestDniIgnoreCase(guestDni).stream()
                 .filter(r -> r.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -40,7 +40,7 @@ public class CheckOutService {
         Reserva reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada."));
 
-        if (!reservation.getGuestDni().equalsIgnoreCase(guestDni)) {
+        if (!reservation.getGuest().getDni().equalsIgnoreCase(guestDni)) {
             throw new IllegalArgumentException("El DNI no coincide con el titular de la reserva.");
         }
 
@@ -57,7 +57,7 @@ public class CheckOutService {
         reservationRepository.save(reservation);
 
         // Marcar la cápsula como pendiente de limpieza
-        capsuleRepository.findById(reservation.getCapsuleId()).ifPresent(capsula -> {
+        capsuleRepository.findById(reservation.getCapsula().getId()).ifPresent(capsula -> {
             capsula.setStatus(Capsula.EstadoCapsula.PENDIENTE_LIMPIEZA);
             capsuleRepository.save(capsula);
         });
