@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -9,20 +9,36 @@ export default function NewReservationPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     guestDni: "",
-    capsuleId: "123e4567-e89b-12d3-a456-426614174000",
     startDate: "",
     endDate: "",
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    const role = localStorage.getItem("user_role");
+    if (role === "ADMIN") {
+      router.push("/admin/dashboard");
+      return;
+    }
+
+    const savedDni = localStorage.getItem('user_dni');
+    if (savedDni) {
+      setFormData(prev => ({ ...prev, guestDni: savedDni }));
+    }
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
+      const token = localStorage.getItem('auth_token');
       const res = await fetch("/api/v1/reservations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(formData),
       });
       if (!res.ok) {
@@ -96,11 +112,11 @@ export default function NewReservationPage() {
           <div>
             <label className="form-label">DNI / NIF</label>
             <input
-              className="input-underline"
+              className="input-underline bg-slate-50 opacity-70 cursor-not-allowed"
               placeholder="12345678A"
               required
+              readOnly
               value={formData.guestDni}
-              onChange={e => setFormData({ ...formData, guestDni: e.target.value })}
             />
           </div>
 

@@ -22,10 +22,10 @@ public class AccessService {
     @Transactional
     public boolean openCapsuleDoor(UUID capsuleId, String guestDni, String pinSubmitted) {
         
-        List<Reserva> activeReservations = reservationRepository.findByCapsuleIdAndStatus(capsuleId, Reserva.EstadoReserva.CHECKIN_HECHO);
+        List<Reserva> activeReservations = reservationRepository.findByCapsulaIdAndStatus(capsuleId, Reserva.EstadoReserva.CHECKIN_HECHO);
         
         Reserva activeReservation = activeReservations.stream()
-                .filter(res -> res.getGuestDni().equalsIgnoreCase(guestDni))
+                .filter(res -> res.getGuest() != null && res.getGuest().getDni().equalsIgnoreCase(guestDni))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No hay una reserva activa (Checked In) para este huésped y cápsula."));
 

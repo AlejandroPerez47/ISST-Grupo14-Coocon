@@ -1,5 +1,6 @@
 package com.touristcocoon.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,5 +24,12 @@ public class Huesped {
 
     @Column(name = "email", nullable = false, length = 150, unique = true)
     private String email;
+
+    @JsonIgnore
+    @Column(name = "password", nullable = false)
+    private String password;
+
+    @Column(name = "role", nullable = false)
+    private String role;
 
 }

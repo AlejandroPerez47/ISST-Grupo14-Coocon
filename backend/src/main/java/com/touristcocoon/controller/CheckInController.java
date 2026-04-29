@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -15,28 +16,22 @@ public class CheckInController {
 
     private final CheckInService checkInService;
 
-    @PostMapping("/{reservationId}")
-    public ResponseEntity<?> processCheckIn(@PathVariable UUID reservationId, @RequestBody CheckInRequest request) {
+    @PostMapping(value = "/{reservationId}", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> processCheckIn(
+            @PathVariable UUID reservationId,
+            @RequestParam("dni") String dni,
+            @RequestParam(value = "dniPhoto", required = false) MultipartFile dniPhoto) {
+        
         try {
             String pin = checkInService.performDigitalCheckIn(
                     reservationId,
-                    request.getDni(),
-                    request.getFirstName(),
-                    request.getLastName(),
-                    request.getEmail()
+                    dni,
+                    dniPhoto
             );
             return ResponseEntity.ok(new CheckInResponse("Check-in completado exitosamente.", pin));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-    }
-
-    @Data
-    public static class CheckInRequest {
-        private String dni;
-        private String firstName;
-        private String lastName;
-        private String email;
     }
 
     @Data

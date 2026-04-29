@@ -1,16 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Lock, Unlock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 export default function AccessPage() {
   const router = useRouter();
-  const [capsuleId, setCapsuleId] = useState("123e4567-e89b-12d3-a456-426614174000");
+
+  const [capsuleId, setCapsuleId] = useState("");
+  const [capsuleName, setCapsuleName] = useState("Buscando...");
   const [guestDni, setGuestDni] = useState("");
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<"idle" | "open" | "error">("idle");
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  useEffect(() => {
+    const role = localStorage.getItem("user_role");
+    if (role === "ADMIN") {
+      router.push("/admin/dashboard");
+      return;
+    }
+
+    const dni = localStorage.getItem("user_dni");
+    const token = localStorage.getItem("auth_token");
+    if (dni) {
+      setGuestDni(dni);
+      fetchActiveCapsule(dni, token);
+    } else {
+      setLoadingConfig(false);
+      setCapsuleName("Usuario no logueado");
+    }
+  }, [router]);
+
+  const fetchActiveCapsule = async (dni: string, token: string | null) => {
+    try {
+      const res = await fetch(`/api/v1/reservations/all-by-dni/${dni.toUpperCase()}`, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Buscamos la reserva que tenga CHECKIN_HECHO
+        const activeRes = data.find((r: any) => r.status === "CHECKIN_HECHO");
+        if (activeRes && activeRes.capsula) {
+          setCapsuleId(activeRes.capsula.id);
+          setCapsuleName(`Habitación ${activeRes.capsula.roomNumber}`);
+        } else {
+          setCapsuleName("Sin Check-in");
+        }
+      } else {
+        setCapsuleName("Sin reservas");
+      }
+    } catch {
+      setCapsuleName("Error de red");
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
 
   const press = (v: string) => {
     if (pin.length < 6) setPin(p => p + v);
@@ -18,7 +65,7 @@ export default function AccessPage() {
   const clear = () => { setPin(""); setStatus("idle"); };
 
   const handleOpen = async () => {
-    if (pin.length !== 6) return;
+    if (pin.length !== 6 || !capsuleId) return;
     try {
       const res = await fetch("/api/v1/access/open", {
         method: "POST",
@@ -45,7 +92,7 @@ export default function AccessPage() {
         </button>
         <div>
           <h1 className="text-white font-bold text-lg">Acceso a Cápsula</h1>
-          <p className="text-white/50 text-xs">Urban Cube · Madrid</p>
+          <p className="text-white/50 text-xs">Terminal: {capsuleName}</p>
         </div>
       </div>
 
@@ -73,10 +120,10 @@ export default function AccessPage() {
         <div>
           <label className="form-label">DNI Huésped</label>
           <input
-            className="input-underline"
+            className="input-underline opacity-50 cursor-not-allowed"
             placeholder="12345678A"
             value={guestDni}
-            onChange={e => setGuestDni(e.target.value)}
+            readOnly
           />
         </div>
 
@@ -115,7 +162,7 @@ export default function AccessPage() {
           </button>
           <button
             onClick={handleOpen}
-            disabled={pin.length !== 6 || isOpen}
+            disabled={pin.length !== 6 || isOpen || !capsuleId}
             className="bg-[#4ABDE8] rounded-2xl h-14 text-xs font-bold text-white active:scale-95 transition-all disabled:opacity-40 shadow-md shadow-sky-300/30"
           >
             Abrir

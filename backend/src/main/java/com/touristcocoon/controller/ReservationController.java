@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -21,9 +22,13 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody CreateReservationRequest request) {
         try {
+            String principalDni = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (!principalDni.equals(request.getGuestDni())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("El DNI de la reserva no coincide con el usuario autenticado.");
+            }
+
             Reserva res = reservationService.createReservation(
                     request.getGuestDni(),
-                    request.getCapsuleId(),
                     request.getStartDate(),
                     request.getEndDate()
             );
@@ -36,7 +41,16 @@ public class ReservationController {
     @GetMapping("/by-dni/{dni}")
     public ResponseEntity<?> getByDni(@PathVariable String dni) {
         try {
-            return ResponseEntity.ok(reservationService.getActiveReservationByDni(dni));
+            return ResponseEntity.ok(reservationService.getActiveReservationsByDni(dni));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/all-by-dni/{dni}")
+    public ResponseEntity<?> getAllByDni(@PathVariable String dni) {
+        try {
+            return ResponseEntity.ok(reservationService.getAllReservationsByDni(dni));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
@@ -45,7 +59,6 @@ public class ReservationController {
     @Data
     public static class CreateReservationRequest {
         private String guestDni;
-        private UUID capsuleId;
         private LocalDate startDate;
         private LocalDate endDate;
     }
