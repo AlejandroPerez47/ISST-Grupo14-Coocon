@@ -103,6 +103,7 @@ public class AdminController {
 
         Capsula cap = Capsula.builder()
                 .roomNumber(request.getRoomNumber())
+                .isReserved(false)
                 .build();
 
         capsuleRepository.save(cap);
