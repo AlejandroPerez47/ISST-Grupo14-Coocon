@@ -8,9 +8,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -20,29 +27,60 @@ public class CheckInService {
     private final GuestRepository guestRepository;
 
     @Transactional
-    public String performDigitalCheckIn(UUID reservationId, String scannedDni, String firstName, String lastName, String email) {
+    public String performDigitalCheckIn(UUID reservationId, String scannedDni, MultipartFile dniPhoto) {
+        
+        // --- VALIDACIÓN ESTRICTA ---
+        if (!StringUtils.hasText(scannedDni)) {
+            throw new IllegalArgumentException("El DNI es obligatorio para hacer el check-in.");
+        }
+        
+        if (dniPhoto == null || dniPhoto.isEmpty()) {
+            throw new IllegalArgumentException("Es obligatorio subir una foto del DNI escaneado por normativa vigente.");
+        }
+        
         Reserva reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
 
-        if (!reservation.getGuestDni().equalsIgnoreCase(scannedDni)) {
-            throw new IllegalArgumentException("El DNI escaneado no coincide con la reserva.");
+        if (!reservation.getGuest().getDni().equalsIgnoreCase(scannedDni)) {
+            throw new IllegalArgumentException("El DNI proporcionado no coincide con la reserva.");
         }
 
         if (reservation.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO) {
             throw new IllegalStateException("El Check-in ya fue realizado previamente.");
         }
 
-        // Registrar o actualizar el huésped con los datos reales escaneados del DNI
-        Optional<Huesped> guestOpt = guestRepository.findById(scannedDni);
-        if (guestOpt.isEmpty()) {
-            Huesped newGuest = Huesped.builder()
-                    .dni(scannedDni)
-                    .firstName(firstName)
-                    .lastName(lastName)
-                    .email(email)
-                    .build();
-            guestRepository.save(newGuest);
+        if (reservation.getStatus() == Reserva.EstadoReserva.CANCELADA) {
+            throw new IllegalStateException("No se puede hacer check-in de una reserva cancelada.");
         }
+
+        if (reservation.getStatus() == Reserva.EstadoReserva.COMPLETADA) {
+            throw new IllegalStateException("Esta reserva ya fue completada.");
+        }
+
+        if (LocalDate.now().isBefore(reservation.getStartDate())) {
+            throw new IllegalStateException("No puedes hacer el check-in antes de la fecha de inicio de tu reserva.");
+        }
+        
+        // --- GUARDADO DE ARCHIVOS ---
+        try {
+            String originalFileName = StringUtils.cleanPath(dniPhoto.getOriginalFilename() != null ? dniPhoto.getOriginalFilename() : "dni.jpg");
+            String storedFileName = reservationId.toString() + "_" + originalFileName;
+            Path uploadPath = Paths.get("uploads");
+            
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            Path filePath = uploadPath.resolve(storedFileName);
+            Files.copy(dniPhoto.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            
+            reservation.setDniPhotoPath(filePath.toString());
+            
+        } catch (Exception ex) {
+            throw new IllegalStateException("Error al guardar la foto del DNI: " + ex.getMessage());
+        }
+
+        // El huésped ya existe obligatoriamente, no necesitamos actualizar sus datos aquí
 
         // Generar PIN único de 6 cifras
         String rawPin = String.format("%06d", new Random().nextInt(999999));

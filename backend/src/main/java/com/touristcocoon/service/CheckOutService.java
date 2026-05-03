@@ -1,6 +1,5 @@
 package com.touristcocoon.service;
 
-import com.touristcocoon.domain.Capsula;
 import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.repository.CapsuleRepository;
 import com.touristcocoon.repository.ReservationRepository;
@@ -22,7 +21,7 @@ public class CheckOutService {
      * el resumen antes de confirmar el checkout.
      */
     public Reserva getActiveCheckedInReservation(String guestDni) {
-        return reservationRepository.findByGuestDni(guestDni).stream()
+        return reservationRepository.findByGuestDniIgnoreCase(guestDni).stream()
                 .filter(r -> r.getStatus() == Reserva.EstadoReserva.CHECKIN_HECHO)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -33,14 +32,14 @@ public class CheckOutService {
      * Realiza el check-out digital:
      * 1. Valida que la reserva exista y pertenezca al huésped.
      * 2. Marca la reserva como COMPLETADA.
-     * 3. Marca la cápsula como PENDIENTE_LIMPIEZA.
+     * 3. Libera la cápsula (isReserved = false).
      */
     @Transactional
     public Reserva performCheckOut(UUID reservationId, String guestDni) {
         Reserva reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada."));
 
-        if (!reservation.getGuestDni().equalsIgnoreCase(guestDni)) {
+        if (!reservation.getGuest().getDni().equalsIgnoreCase(guestDni)) {
             throw new IllegalArgumentException("El DNI no coincide con el titular de la reserva.");
         }
 
@@ -56,9 +55,9 @@ public class CheckOutService {
         reservation.setAccessPin(null);
         reservationRepository.save(reservation);
 
-        // Marcar la cápsula como pendiente de limpieza
-        capsuleRepository.findById(reservation.getCapsuleId()).ifPresent(capsula -> {
-            capsula.setStatus(Capsula.EstadoCapsula.PENDIENTE_LIMPIEZA);
+        // Liberar la cápsula (ya no está reservada)
+        capsuleRepository.findById(reservation.getCapsula().getId()).ifPresent(capsula -> {
+            capsula.setReserved(false);
             capsuleRepository.save(capsula);
         });
 

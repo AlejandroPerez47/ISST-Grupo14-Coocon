@@ -43,7 +43,7 @@ public class CheckOutController {
             return ResponseEntity.ok(new CheckOutResponse(
                     "Check-out completado correctamente. ¡Hasta pronto!",
                     completed.getId(),
-                    completed.getGuestDni(),
+                    completed.getGuest().getDni(),
                     completed.getStartDate().toString(),
                     completed.getEndDate().toString()
             ));
