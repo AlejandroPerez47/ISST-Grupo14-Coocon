@@ -94,6 +94,7 @@ public class AdminController {
             return new AuditCapsuleDTO(
                     capsula.getId(),
                     capsula.getRoomNumber(),
+                    capsula.getStatus().name(),
                     resList,
                     logList
             );
@@ -114,6 +115,19 @@ public class AdminController {
 
         capsuleRepository.save(cap);
         return ResponseEntity.ok("Cápsula creada exitosamente.");
+    }
+
+    @PutMapping("/capsules/{id}/status")
+    @Transactional
+    public ResponseEntity<?> updateCapsuleStatus(@PathVariable UUID id, @RequestBody UpdateCapsuleStatusRequest request) {
+        var capOpt = capsuleRepository.findById(id);
+        if (capOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cápsula no encontrada.");
+        }
+        var cap = capOpt.get();
+        cap.setStatus(request.getStatus());
+        capsuleRepository.save(cap);
+        return ResponseEntity.ok("Estado de la cápsula actualizado.");
     }
 
     @GetMapping("/active-guests")
@@ -336,6 +350,7 @@ public class AdminController {
     public static class AuditCapsuleDTO {
         private final UUID capsuleId;
         private final Integer roomNumber;
+        private final String status;
         private final List<AuditReservationDTO> reservations;
         private final List<AuditLogDTO> accessLogs;
     }
@@ -443,5 +458,10 @@ public class AdminController {
     @Data
     public static class UpdateIncidentStatusRequest {
         private Incidencia.EstadoIncidencia status;
+    }
+
+    @Data
+    public static class UpdateCapsuleStatusRequest {
+        private Capsula.EstadoCapsula status;
     }
 }

@@ -256,7 +256,7 @@ export default function GuestProfilePage({ params }: { params: { dni: string } }
                       <div>
                         <div className="text-xs font-mono text-slate-400 mb-0.5">ID: {res.id.split('-')[0]}</div>
                         <div className="font-bold text-slate-800">
-                          {res.startDate.slice(5)} <span className="text-slate-300 font-normal mx-1">➜</span> {res.endDate.slice(5)}
+                          {res.startDate.substring(8, 10)}-{res.startDate.substring(5, 7)} <span className="text-slate-300 font-normal mx-1">➜</span> {res.endDate.substring(8, 10)}-{res.endDate.substring(5, 7)}
                         </div>
                       </div>
                     </div>

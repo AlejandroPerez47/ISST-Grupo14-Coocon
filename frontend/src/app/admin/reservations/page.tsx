@@ -124,7 +124,7 @@ export default function AdminFutureReservationsPage() {
 
                 <div className="bg-slate-50 rounded-2xl p-3 flex flex-col gap-1 w-full border border-slate-100">
                   <span className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1"><CalendarDays size={12}/> Periodo</span>
-                  <span className="font-bold text-slate-700 text-sm">{res.startDate.slice(5)} al {res.endDate.slice(5)}</span>
+                  <span className="font-bold text-slate-700 text-sm">{res.startDate.substring(8, 10)}-{res.startDate.substring(5, 7)} al {res.endDate.substring(8, 10)}-{res.endDate.substring(5, 7)}</span>
                 </div>
 
               </div>

@@ -146,7 +146,7 @@ export default function AdminGuestsPage() {
 
                 <div className="bg-slate-50 rounded-2xl p-3 flex flex-col gap-1 w-full border border-slate-100">
                   <span className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1"><CalendarDays size={12}/> Periodo</span>
-                  <span className="font-bold text-slate-700 text-sm">{guest.startDate.slice(5)} al {guest.endDate.slice(5)}</span>
+                  <span className="font-bold text-slate-700 text-sm">{guest.startDate.substring(8, 10)}-{guest.startDate.substring(5, 7)} al {guest.endDate.substring(8, 10)}-{guest.endDate.substring(5, 7)}</span>
                 </div>
 
               </div>

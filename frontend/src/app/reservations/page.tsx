@@ -64,7 +64,7 @@ export default function ReservationsPage() {
           className="absolute top-6 right-6 bg-white/20 backdrop-blur-sm rounded-full p-2.5 text-white hover:bg-white/30 transition-all flex items-center gap-2 group z-50"
           title="Cerrar sesión"
         >
-          <span className="text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap px-1 uppercase tracking-wider">Salir</span>
+          <span className="text-[10px] font-bold transition-opacity whitespace-nowrap px-1 uppercase tracking-wider">Salir</span>
           <LogOut size={18} />
         </button>
 

@@ -24,6 +24,7 @@ type AuditReservation = {
 type AuditCapsule = {
   capsuleId: string;
   roomNumber: number;
+  status: string;
   reservations: AuditReservation[];
   accessLogs: AuditLog[];
 };
@@ -191,6 +192,29 @@ export default function AdminDashboard() {
       toast.error("Error de conexión al guardar");
     } finally {
       setSavingCapsule(false);
+    }
+  };
+
+  const handleUpdateCapsuleStatus = async (id: string, newStatus: string) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/v1/admin/capsules/${id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        toast.success("Cápsula marcada como disponible");
+        fetchAuditData();
+        fetchMetrics();
+      } else {
+        toast.error(await res.text());
+      }
+    } catch {
+      toast.error("Error de conexión");
     }
   };
 
@@ -427,7 +451,18 @@ export default function AdminDashboard() {
                   {auditData.map((capsule) => (
                     <tr key={capsule.capsuleId} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       <td className="p-4 font-bold text-[#1B2F6E] sticky left-0 bg-white z-10 shadow-[1px_0_0_#f1f5f9]">
-                        Habitación {capsule.roomNumber}
+                        <div className="flex flex-col gap-1 items-start">
+                          <span>Habitación {capsule.roomNumber}</span>
+                          {capsule.status === 'PENDIENTE_LIMPIEZA' && (
+                            <button 
+                              onClick={() => handleUpdateCapsuleStatus(capsule.capsuleId, 'DISPONIBLE')}
+                              className="bg-amber-100 text-amber-700 hover:bg-amber-500 hover:text-white transition-colors text-[9px] px-2 py-1 rounded shadow-sm uppercase tracking-wider font-bold border border-amber-200 mt-1"
+                              title="Marcar como limpia y disponible"
+                            >
+                              Marcar Limpia
+                            </button>
+                          )}
+                        </div>
                       </td>
                       {calendarDays.map((date, i) => {
                         // Comprobar si esta cápsula está reservada en este día
