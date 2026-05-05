@@ -116,7 +116,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background blobs for premium feel */}
       <div className="absolute -top-24 -left-24 w-64 h-64 bg-sky/20 rounded-full blur-3xl" />
       <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-navy/10 rounded-full blur-3xl" />

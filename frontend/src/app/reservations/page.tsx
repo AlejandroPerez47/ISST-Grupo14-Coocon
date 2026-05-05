@@ -8,6 +8,7 @@ import { ArrowRight, Star, LogOut } from 'lucide-react';
 export default function ReservationsPage() {
   const router = useRouter();
   const [userName, setUserName] = useState('');
+  const [hasActiveCheckIn, setHasActiveCheckIn] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('user_role');
@@ -20,6 +21,26 @@ export default function ReservationsPage() {
     if (name) {
       setUserName(name);
     }
+
+    // Check if user has active check-in
+    const checkActiveReservations = async () => {
+      const dni = localStorage.getItem('user_dni');
+      const token = localStorage.getItem('auth_token');
+      if (dni && token) {
+        try {
+          const res = await fetch(`/api/v1/checkout/by-dni/${dni}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setHasActiveCheckIn(data && data.length > 0);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    checkActiveReservations();
   }, [router]);
 
   const handleLogout = () => {
@@ -28,7 +49,7 @@ export default function ReservationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col max-w-md mx-auto relative antialiased">
+    <div className="min-h-screen bg-transparent flex flex-col max-w-md mx-auto relative antialiased">
       
       {/* ── HEADER / HERO ── */}
       <div
@@ -43,7 +64,7 @@ export default function ReservationsPage() {
           className="absolute top-6 right-6 bg-white/20 backdrop-blur-sm rounded-full p-2.5 text-white hover:bg-white/30 transition-all flex items-center gap-2 group z-50"
           title="Cerrar sesión"
         >
-          <span className="text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap px-1 uppercase tracking-wider">Salir</span>
+          <span className="text-[10px] font-bold transition-opacity whitespace-nowrap px-1 uppercase tracking-wider">Salir</span>
           <LogOut size={18} />
         </button>
 
@@ -73,12 +94,17 @@ export default function ReservationsPage() {
       <div className="flex-1 px-4 pt-8 pb-32 space-y-6">
 
         {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { href: '/reservations/new', emoji: '🛏️', label: 'Reservar' },
             { href: '/checkin', emoji: '📲', label: 'Check-in' },
+            { href: '/checkout', emoji: '🚪', label: 'Check-out' },
             { href: '/access', emoji: '🔑', label: 'Acceso' },
             { href: '/reservations/my', emoji: '📋', label: 'Mis Reservas' },
+            ...(hasActiveCheckIn ? [
+              { href: '/incidents/new', emoji: '⚠️', label: 'Incidencia' },
+              { href: '/incidents/my', emoji: '📊', label: 'Mis Incidencias' }
+            ] : [])
           ].map(a => (
             <Link key={a.href} href={a.href}>
               <div className="bg-white rounded-[2rem] p-4 shadow-xl shadow-navy/5 border border-white flex flex-col items-center gap-2 cursor-pointer hover:shadow-navy/10 hover:-translate-y-1 transition-all active:scale-95 group">

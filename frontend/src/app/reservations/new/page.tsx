@@ -56,7 +56,7 @@ export default function NewReservationPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#F5EFE6] max-w-md mx-auto flex flex-col items-center justify-center px-4 pb-28">
+      <div className="min-h-screen bg-transparent max-w-md mx-auto flex flex-col items-center justify-center px-4 pb-28">
         <div className="card w-full text-center space-y-6 py-10">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#4ABDE8]/15 text-[#4ABDE8] mx-auto">
             <CheckCircle size={44} strokeWidth={1.5} />
@@ -91,7 +91,7 @@ export default function NewReservationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5EFE6] max-w-md mx-auto flex flex-col">
+    <div className="min-h-screen bg-transparent max-w-md mx-auto flex flex-col">
 
       {/* Header */}
       <div

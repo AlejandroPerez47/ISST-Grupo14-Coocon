@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, DoorOpen, CalendarDays, KeyRound, Loader2, Info } from "lucide-react";
+import { ArrowLeft, User, DoorOpen, CalendarDays, KeyRound, Loader2, Info, LogOut } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ActiveGuest {
@@ -53,6 +53,28 @@ export default function AdminGuestsPage() {
     }
   };
 
+  const handleForceCheckOut = async (reservationId: string, dni: string) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/v1/checkout/${reservationId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ guestDni: dni }),
+      });
+      if (res.ok) {
+        toast.success("Check-out forzado correctamente.");
+        fetchGuests();
+      } else {
+        toast.error(await res.text());
+      }
+    } catch {
+      toast.error("Error de conexión al forzar check-out");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#1B2F6E] flex items-center justify-center">
@@ -62,7 +84,7 @@ export default function AdminGuestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans max-w-4xl mx-auto md:p-6 p-0">
+    <div className="min-h-screen bg-transparent font-sans max-w-4xl mx-auto md:p-6 p-0">
       
       {/* ── HEADER ── */}
       <div className="bg-[#1B2F6E] md:rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden flex flex-col gap-6">
@@ -124,13 +146,13 @@ export default function AdminGuestsPage() {
 
                 <div className="bg-slate-50 rounded-2xl p-3 flex flex-col gap-1 w-full border border-slate-100">
                   <span className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1"><CalendarDays size={12}/> Periodo</span>
-                  <span className="font-bold text-slate-700 text-sm">{guest.startDate.slice(5)} al {guest.endDate.slice(5)}</span>
+                  <span className="font-bold text-slate-700 text-sm">{guest.startDate.substring(8, 10)}-{guest.startDate.substring(5, 7)} al {guest.endDate.substring(8, 10)}-{guest.endDate.substring(5, 7)}</span>
                 </div>
 
               </div>
 
-              {/* Status Badge */}
-              <div className="mt-2 md:mt-0 flex justify-end">
+              {/* Status Badge & Actions */}
+              <div className="mt-2 md:mt-0 flex flex-col items-end justify-center gap-2">
                  <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider ${
                    guest.status === 'CHECKIN_HECHO' 
                      ? 'bg-emerald-100 text-emerald-700' 
@@ -138,6 +160,20 @@ export default function AdminGuestsPage() {
                  }`}>
                    {guest.status === 'CHECKIN_HECHO' ? 'In-House' : 'Pendiente (Hoy)'}
                  </span>
+                 
+                 {guest.status === 'CHECKIN_HECHO' && (
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       if (confirm(`¿Estás seguro de que quieres forzar el check-out de ${guest.firstName} ${guest.lastName}? Esta acción es irreversible.`)) {
+                         handleForceCheckOut(guest.reservationId, guest.dni);
+                       }
+                     }}
+                     className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center gap-1 shadow-sm active:scale-95"
+                   >
+                     <LogOut size={12} strokeWidth={2.5} /> Check-Out
+                   </button>
+                 )}
               </div>
 
             </div>

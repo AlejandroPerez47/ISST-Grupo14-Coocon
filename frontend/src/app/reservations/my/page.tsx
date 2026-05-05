@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Key, Info } from "lucide-react";
+import { ArrowLeft, CalendarDays, Key, Info, CalendarPlus } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MyReservationsPage() {
@@ -60,8 +60,17 @@ export default function MyReservationsPage() {
     }
   };
 
+  const getGoogleCalendarUrl = (res: any) => {
+    const title = encodeURIComponent(`Tourist Cocoon - Cápsula ${res.capsula?.roomNumber || 'Por asignar'}`);
+    const start = res.startDate.replace(/-/g, '') + 'T140000';
+    const end = res.endDate.replace(/-/g, '') + 'T110000';
+    const details = encodeURIComponent(`Tu reserva digital en Tourist Cocoon.\nRecuerda hacer el Check-in online antes de llegar para obtener tu PIN de acceso.`);
+    const location = encodeURIComponent(`Tourist Cocoon Madrid`);
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
+  };
+
   return (
-    <div className="min-h-screen bg-[#F5EFE6] max-w-md mx-auto flex flex-col">
+    <div className="min-h-screen bg-transparent max-w-md mx-auto flex flex-col">
 
       {/* Header */}
       <div
@@ -130,6 +139,19 @@ export default function MyReservationsPage() {
                   <span className="text-sky text-xs font-bold uppercase tracking-widest">PIN de Acceso</span>
                   <span className="font-mono text-white text-lg font-black tracking-[0.2em]">{res.accessPin}</span>
                 </div>
+              )}
+
+              {/* Add to Google Calendar button (only if not cancelled/completed) */}
+              {(res.status === 'PENDIENTE' || res.status === 'CONFIRMADA' || res.status === 'CHECKIN_HECHO') && (
+                <a
+                  href={getGoogleCalendarUrl(res)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 bg-white border border-slate-200 text-slate-600 rounded-xl p-2.5 flex justify-center items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm active:scale-95 text-xs font-bold"
+                >
+                  <CalendarPlus size={16} className="text-[#4ABDE8]" />
+                  Añadir a Google Calendar
+                </a>
               )}
             </div>
           ))

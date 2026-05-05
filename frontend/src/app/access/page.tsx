@@ -87,7 +87,7 @@ export default function AccessPage() {
 
       {/* Header */}
       <div className="px-5 pt-12 pb-4 flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-white/60 hover:text-white transition-colors">
+        <button onClick={() => router.push('/reservations')} className="text-white/60 hover:text-white transition-colors">
           <ArrowLeft size={22} />
         </button>
         <div>
@@ -114,18 +114,9 @@ export default function AccessPage() {
       </div>
 
       {/* Card with keypad */}
-      <div className="bg-[#F5EFE6] mx-4 rounded-3xl p-5 flex-1 flex flex-col gap-4 mb-28">
+      <div className="bg-transparent mx-4 rounded-3xl p-5 flex-1 flex flex-col gap-4 mb-28">
 
-        {/* DNI field */}
-        <div>
-          <label className="form-label">DNI Huésped</label>
-          <input
-            className="input-underline opacity-50 cursor-not-allowed"
-            placeholder="12345678A"
-            value={guestDni}
-            readOnly
-          />
-        </div>
+
 
         {/* PIN display */}
         <div className="bg-[#1B2F6E] rounded-2xl px-4 py-4 flex items-center justify-center gap-3">

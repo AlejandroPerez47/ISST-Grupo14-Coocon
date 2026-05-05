@@ -20,4 +20,14 @@ public class Capsula {
     @Column(name = "room_number", nullable = false, unique = true)
     private int roomNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private EstadoCapsula status = EstadoCapsula.DISPONIBLE;
+
+    public enum EstadoCapsula {
+        DISPONIBLE,
+        OCUPADA,
+        PENDIENTE_LIMPIEZA
+    }
 }
