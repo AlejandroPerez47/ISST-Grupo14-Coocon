@@ -2,7 +2,10 @@ package com.touristcocoon.service;
 
 
 import com.touristcocoon.domain.Reserva;
-
+import com.touristcocoon.domain.Capsula;
+import com.touristcocoon.domain.Huesped;
+import com.touristcocoon.repository.CapsuleRepository;
+import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,12 +22,27 @@ import java.util.UUID;
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
+    private final CapsuleRepository capsuleRepository;
+    private final GuestRepository guestRepository;
 
     @Transactional
-    public Reserva createReservation(String dni, UUID capsuleId, LocalDate startDate, LocalDate endDate) {
+    public Reserva createReservation(String dni, LocalDate startDate, LocalDate endDate) {
         // Validate dates
-        if (startDate.isBefore(LocalDate.now()) || endDate.isBefore(startDate)) {
+        if (startDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Fechas de reserva inválidas.");
+        }
+        if (!startDate.isBefore(endDate)) {
+            throw new IllegalArgumentException(
+                    "La reserva debe durar al menos 1 noche. La fecha de salida debe ser posterior a la de entrada.");
+        }
+
+        // Rule 0: No overlapping active reservations for the same guest
+        List<Reserva> overlapping = reservationRepository.findOverlappingActiveByGuestDni(
+                dni, startDate, endDate,
+                List.of(Reserva.EstadoReserva.CANCELADA, Reserva.EstadoReserva.COMPLETADA));
+        if (!overlapping.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Ya tienes una reserva activa que se solapa con estas fechas.");
         }
 
         // Rule 1: Max 7 consecutive nights
@@ -36,12 +54,30 @@ public class ReservationService {
         // Rule 2: Max 15 days in the same calendar month
         validateMax15DaysPerMonth(dni, startDate, endDate);
 
-        // Validate capsule availability
-        validateCapsuleAvailability(capsuleId, startDate, endDate);
+        // Retrieve all capsules to find an available one
+        List<Capsula> allCapsules = capsuleRepository.findAll();
+        if (allCapsules.isEmpty()) {
+            throw new IllegalArgumentException("No hay cápsulas operativas en el hotel actualmente.");
+        }
+
+        Capsula assignedCapsule = null;
+        for (Capsula capsule : allCapsules) {
+            if (isCapsuleAvailable(capsule.getId(), startDate, endDate)) {
+                assignedCapsule = capsule;
+                break;
+            }
+        }
+
+        if (assignedCapsule == null) {
+            throw new IllegalArgumentException("No hay cápsulas libres para el periodo de fechas seleccionado.");
+        }
+
+        Huesped guest = guestRepository.findById(dni)
+                .orElseThrow(() -> new IllegalArgumentException("Huésped no encontrado."));
 
         Reserva reservation = Reserva.builder()
-                .guestDni(dni)
-                .capsuleId(capsuleId)
+                .guest(guest)
+                .capsula(assignedCapsule)
                 .startDate(startDate)
                 .endDate(endDate)
                 .status(Reserva.EstadoReserva.PENDIENTE)
@@ -52,48 +88,69 @@ public class ReservationService {
     }
 
     private void validateMax15DaysPerMonth(String dni, LocalDate startDate, LocalDate endDate) {
-        // Obtenemos las reservas del huésped en el mes actual para validarlo (simplificado)
-        List<Reserva> userReservations = reservationRepository.findByGuestDni(dni);
-        
-        int month = startDate.getMonthValue();
-        int year = startDate.getYear();
-        
-        long totalDaysInMonth = userReservations.stream()
+        // Límites del mes natural evaluado (basado en startDate de la nueva reserva)
+        LocalDate firstDayOfMonth = startDate.withDayOfMonth(1);
+        LocalDate lastDayOfMonth  = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        // Días de la NUEVA reserva que caen estrictamente dentro del mes evaluado
+        LocalDate clampedNewStart = startDate.isBefore(firstDayOfMonth) ? firstDayOfMonth : startDate;
+        LocalDate clampedNewEnd   = endDate.isAfter(lastDayOfMonth) ? lastDayOfMonth : endDate;
+        long newDaysInMonth = Math.max(0, ChronoUnit.DAYS.between(clampedNewStart, clampedNewEnd));
+
+        // Días acumulados de reservas previas (no canceladas) dentro del mismo mes
+        List<Reserva> userReservations = reservationRepository.findByGuestDniIgnoreCase(dni);
+
+        long previousDaysInMonth = userReservations.stream()
                 .filter(r -> r.getStatus() != Reserva.EstadoReserva.CANCELADA)
-                .filter(r -> r.getStartDate().getMonthValue() == month && r.getStartDate().getYear() == year)
-                .mapToLong(r -> ChronoUnit.DAYS.between(
-                        r.getStartDate().isBefore(startDate.withDayOfMonth(1)) ? startDate.withDayOfMonth(1) : r.getStartDate(),
-                        r.getEndDate().isAfter(startDate.withDayOfMonth(startDate.lengthOfMonth())) ? startDate.withDayOfMonth(startDate.lengthOfMonth()) : r.getEndDate()
-                ))
+                // Solo reservas que se solapen con el mes evaluado
+                .filter(r -> !r.getEndDate().isBefore(firstDayOfMonth) && !r.getStartDate().isAfter(lastDayOfMonth))
+                .mapToLong(r -> {
+                    // Recortamos (clamp) al rango del mes natural
+                    LocalDate effStart = r.getStartDate().isBefore(firstDayOfMonth) ? firstDayOfMonth : r.getStartDate();
+                    LocalDate effEnd   = r.getEndDate().isAfter(lastDayOfMonth) ? lastDayOfMonth : r.getEndDate();
+                    return Math.max(0, ChronoUnit.DAYS.between(effStart, effEnd));
+                })
                 .sum();
-                
-        long daysRequested = ChronoUnit.DAYS.between(startDate, endDate);
-        
-        if (totalDaysInMonth + daysRequested > 15) {
-            throw new IllegalArgumentException("La reserva hace que el huésped supere los 15 días naturales permitidos por mes.");
+
+        if (previousDaysInMonth + newDaysInMonth > 15) {
+            throw new IllegalArgumentException(
+                    "La reserva hace que el huésped supere los 15 días naturales permitidos por mes.");
         }
     }
 
-    private void validateCapsuleAvailability(UUID capsuleId, LocalDate startDate, LocalDate endDate) {
+    private boolean isCapsuleAvailable(UUID capsuleId, LocalDate startDate, LocalDate endDate) {
         List<Reserva> conflicts = reservationRepository
-                .findByCapsuleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                .findByCapsulaIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
                         capsuleId, endDate, startDate, Reserva.EstadoReserva.CANCELADA
                 );
-
-        if (!conflicts.isEmpty()) {
-            throw new IllegalArgumentException("La cápsula seleccionada no está disponible en esas fechas.");
-        }
+        return conflicts.isEmpty();
     }
     
+    @Transactional(readOnly = true)
     public Reserva getReservation(UUID id) {
         return reservationRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
     }
 
-    public Reserva getActiveReservationByDni(String dni) {
-        return reservationRepository.findByGuestDni(dni).stream()
+    @Transactional(readOnly = true)
+    public List<Reserva> getActiveReservationsByDni(String dni) {
+        List<Reserva> activeReservations = reservationRepository.findByGuestDniIgnoreCase(dni).stream()
                 .filter(r -> r.getStatus() == Reserva.EstadoReserva.CONFIRMADA
                           || r.getStatus() == Reserva.EstadoReserva.PENDIENTE)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró una reserva activa para ese DNI."));
+                .toList();
+                
+        if (activeReservations.isEmpty()) {
+            throw new IllegalArgumentException("No se encontraron reservas activas para ese DNI.");
+        }
+        
+        return activeReservations;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Reserva> getAllReservationsByDni(String dni) {
+        List<Reserva> allReservations = reservationRepository.findByGuestDniIgnoreCase(dni);
+        if (allReservations.isEmpty()) {
+            throw new IllegalArgumentException("No se encontraron reservas para este usuario.");
+        }
+        return allReservations;
     }
 }

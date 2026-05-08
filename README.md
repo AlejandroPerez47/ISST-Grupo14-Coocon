@@ -60,22 +60,9 @@ Para este Sprint, hemos integrado **H2**, una base de datos relacional ligera qu
 Para probar la plataforma al completo, necesitas abrir **dos terminales diferentes** en la raíz del proyecto.
 
 ### 4.1 Arrancar el Backend (Java)
-Entra en la carpeta del backend y compila/ejecuta con Maven:
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-*   📌 **API:** `http://localhost:8080/api/v1/...`
-*   📖 **Documentación Swagger:** `http://localhost:8080/swagger-ui.html`
-*   💾 **Consola Base de Datos H2:** `http://localhost:8080/h2-console` *(URL: `jdbc:h2:mem:tourist_cocoon` - Usuario: `sa`)*
+Para arrancarlo, vamos a backend/src/java/TouristCocoonApplication.java y hacemos "run"
 
 ### 4.2 Arrancar el Frontend (Next.js)
-Abre otra terminal, entra en frontend, e inicia el servidor de desarrollo:
-```bash
-cd frontend
-npm install # (Solo la primera vez)
-npm run dev
-```
-*   🌍 **Aplicación Web:** `http://localhost:3000`
+Ahora nos situamos en frontend, y ejecutamos npm run dev
 
 
