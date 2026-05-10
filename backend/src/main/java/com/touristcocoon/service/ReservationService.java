@@ -27,6 +27,14 @@ public class ReservationService {
 
     @Transactional
     public Reserva createReservation(String dni, LocalDate startDate, LocalDate endDate) {
+        // Validación defensiva de parámetros
+        if (dni == null || dni.isBlank()) {
+            throw new IllegalArgumentException("El DNI es obligatorio.");
+        }
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Las fechas de inicio y fin son obligatorias.");
+        }
+
         // Validate dates
         if (startDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Fechas de reserva inválidas.");

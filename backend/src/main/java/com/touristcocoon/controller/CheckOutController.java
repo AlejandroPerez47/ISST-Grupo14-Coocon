@@ -2,6 +2,9 @@ package com.touristcocoon.controller;
 
 import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.service.CheckOutService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +43,7 @@ public class CheckOutController {
     @PostMapping("/{reservationId}")
     public ResponseEntity<?> processCheckOut(
             @PathVariable UUID reservationId,
-            @RequestBody CheckOutRequest request) {
+            @Valid @RequestBody CheckOutRequest request) {
         try {
             Reserva completed = checkOutService.performCheckOut(reservationId, request.getGuestDni());
             return ResponseEntity.ok(new CheckOutResponse(
@@ -57,6 +60,8 @@ public class CheckOutController {
 
     @Data
     public static class CheckOutRequest {
+        @NotBlank(message = "El DNI del huésped es obligatorio")
+        @Pattern(regexp = "^[0-9]{8}[A-Za-z]$", message = "Formato de DNI inválido (8 dígitos + 1 letra)")
         private String guestDni;
     }
 

@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.Random;
+import java.security.SecureRandom;
 import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Files;
@@ -22,6 +22,8 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class CheckInService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final ReservationRepository reservationRepository;
     private final GuestRepository guestRepository;
@@ -83,7 +85,7 @@ public class CheckInService {
         // El huésped ya existe obligatoriamente, no necesitamos actualizar sus datos aquí
 
         // Generar PIN único de 6 cifras
-        String rawPin = String.format("%06d", new Random().nextInt(999999));
+        String rawPin = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
         
         reservation.setAccessPin(rawPin);
         reservation.setStatus(Reserva.EstadoReserva.CHECKIN_HECHO);

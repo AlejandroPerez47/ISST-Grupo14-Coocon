@@ -1,9 +1,11 @@
 package com.touristcocoon.controller;
 
 import com.touristcocoon.service.CheckInService;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,6 +14,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/checkin")
 @RequiredArgsConstructor
+@Validated
 public class CheckInController {
 
     private final CheckInService checkInService;
@@ -19,7 +22,9 @@ public class CheckInController {
     @PostMapping(value = "/{reservationId}", consumes = {"multipart/form-data"})
     public ResponseEntity<?> processCheckIn(
             @PathVariable UUID reservationId,
-            @RequestParam("dni") String dni,
+            @RequestParam("dni")
+            @Pattern(regexp = "^[0-9]{8}[A-Za-z]$", message = "Formato de DNI inválido (8 dígitos + 1 letra)")
+            String dni,
             @RequestParam(value = "dniPhoto", required = false) MultipartFile dniPhoto) {
         
         try {

@@ -52,6 +52,16 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
 
         // --- Validaciones de integridad de datos ---
+        if (request.getNombre() == null || request.getNombre().isBlank()) {
+            throw new IllegalArgumentException("El nombre es obligatorio.");
+        }
+        if (request.getApellidos() == null || request.getApellidos().isBlank()) {
+            throw new IllegalArgumentException("Los apellidos son obligatorios.");
+        }
+        if (request.getPassword() == null || request.getPassword().length() < 4) {
+            throw new IllegalArgumentException("La contraseña debe tener al menos 4 caracteres.");
+        }
+
         String email = request.getEmail();
         if (email == null || !EMAIL_PATTERN.matcher(email.trim()).matches()) {
             throw new IllegalArgumentException(

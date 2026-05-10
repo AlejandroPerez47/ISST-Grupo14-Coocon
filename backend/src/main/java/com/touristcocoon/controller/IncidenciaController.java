@@ -6,6 +6,10 @@ import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.repository.IncidenciaRepository;
 import com.touristcocoon.repository.ReservationRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +34,7 @@ public class IncidenciaController {
 
     @PostMapping
     @Transactional
-    public ResponseEntity<?> createIncident(@RequestBody CreateIncidentRequest request) {
+    public ResponseEntity<?> createIncident(@Valid @RequestBody CreateIncidentRequest request) {
         String principalDni = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Huesped guest = guestRepository.findById(principalDni)
@@ -87,8 +91,14 @@ public class IncidenciaController {
 
     @Data
     public static class CreateIncidentRequest {
+        @NotNull(message = "El ID de la reserva es obligatorio")
         private UUID reservationId;
+
+        @NotNull(message = "La categoría de la incidencia es obligatoria")
         private Incidencia.CategoriaIncidencia category;
+
+        @NotBlank(message = "La descripción de la incidencia es obligatoria")
+        @Size(min = 5, max = 1000, message = "La descripción debe tener entre 5 y 1000 caracteres")
         private String description;
     }
 

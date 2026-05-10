@@ -2,6 +2,10 @@ package com.touristcocoon.controller;
 
 import com.touristcocoon.domain.Reserva;
 import com.touristcocoon.service.ReservationService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,7 +23,7 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @PostMapping
-    public ResponseEntity<?> createReservation(@RequestBody CreateReservationRequest request) {
+    public ResponseEntity<?> createReservation(@Valid @RequestBody CreateReservationRequest request) {
         try {
             String principalDni = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (!principalDni.equals(request.getGuestDni())) {
@@ -57,8 +61,14 @@ public class ReservationController {
 
     @Data
     public static class CreateReservationRequest {
+        @NotBlank(message = "El DNI del huésped es obligatorio")
+        @Pattern(regexp = "^[0-9]{8}[A-Za-z]$", message = "Formato de DNI inválido (8 dígitos + 1 letra)")
         private String guestDni;
+
+        @NotNull(message = "La fecha de inicio es obligatoria")
         private LocalDate startDate;
+
+        @NotNull(message = "La fecha de fin es obligatoria")
         private LocalDate endDate;
     }
 }

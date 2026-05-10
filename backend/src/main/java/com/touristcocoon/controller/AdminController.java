@@ -9,6 +9,12 @@ import com.touristcocoon.repository.GuestRepository;
 import com.touristcocoon.repository.IncidenciaRepository;
 import com.touristcocoon.repository.ReservationRepository;
 import com.touristcocoon.repository.AccessRecordRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -104,7 +110,7 @@ public class AdminController {
     }
 
     @PostMapping("/capsules")
-    public ResponseEntity<?> createCapsule(@RequestBody CapsuleRequest request) {
+    public ResponseEntity<?> createCapsule(@Valid @RequestBody CapsuleRequest request) {
         if (capsuleRepository.findByRoomNumber(request.getRoomNumber()).isPresent()) {
             return ResponseEntity.badRequest().body("La habitación con número " + request.getRoomNumber() + " ya existe.");
         }
@@ -119,7 +125,7 @@ public class AdminController {
 
     @PutMapping("/capsules/{id}/status")
     @Transactional
-    public ResponseEntity<?> updateCapsuleStatus(@PathVariable UUID id, @RequestBody UpdateCapsuleStatusRequest request) {
+    public ResponseEntity<?> updateCapsuleStatus(@PathVariable UUID id, @Valid @RequestBody UpdateCapsuleStatusRequest request) {
         var capOpt = capsuleRepository.findById(id);
         if (capOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cápsula no encontrada.");
@@ -276,7 +282,7 @@ public class AdminController {
 
     @PutMapping("/guests/{dni}")
     @Transactional
-    public ResponseEntity<?> updateGuestProfile(@PathVariable String dni, @RequestBody UpdateGuestRequest request) {
+    public ResponseEntity<?> updateGuestProfile(@PathVariable String dni, @Valid @RequestBody UpdateGuestRequest request) {
         var guestOpt = guestRepository.findById(dni);
         if (guestOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Huésped no encontrado.");
@@ -305,6 +311,7 @@ public class AdminController {
 
     @Data
     public static class CapsuleRequest {
+        @Positive(message = "El número de habitación debe ser un número positivo")
         private int roomNumber;
     }
 
@@ -341,8 +348,16 @@ public class AdminController {
 
     @Data
     public static class UpdateGuestRequest {
+        @NotBlank(message = "El nombre es obligatorio")
+        @Size(max = 100, message = "El nombre no puede exceder 100 caracteres")
         private String firstName;
+
+        @NotBlank(message = "Los apellidos son obligatorios")
+        @Size(max = 150, message = "Los apellidos no pueden exceder 150 caracteres")
         private String lastName;
+
+        @NotBlank(message = "El email es obligatorio")
+        @Email(message = "El formato del email no es válido")
         private String email;
     }
 
@@ -422,7 +437,7 @@ public class AdminController {
 
     @PutMapping("/incidents/{id}/status")
     @Transactional
-    public ResponseEntity<?> updateIncidentStatus(@PathVariable UUID id, @RequestBody UpdateIncidentStatusRequest request) {
+    public ResponseEntity<?> updateIncidentStatus(@PathVariable UUID id, @Valid @RequestBody UpdateIncidentStatusRequest request) {
         var incOpt = incidenciaRepository.findById(id);
         if (incOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Incidencia no encontrada.");
@@ -457,11 +472,13 @@ public class AdminController {
 
     @Data
     public static class UpdateIncidentStatusRequest {
+        @NotNull(message = "El estado de la incidencia es obligatorio")
         private Incidencia.EstadoIncidencia status;
     }
 
     @Data
     public static class UpdateCapsuleStatusRequest {
+        @NotNull(message = "El estado de la cápsula es obligatorio")
         private Capsula.EstadoCapsula status;
     }
 }
